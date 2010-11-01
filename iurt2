@@ -366,7 +366,7 @@ plog_init($program_name, $run{logfd}||$LOG, 7, 1); # For parsing command line
 #
 (my $iurt_rev = '$Rev: 271258 $') =~ s/.*: (\d+).*/$1/;
 (my $iurt_aut = '$Author: blino $') =~ s/.*: (..).*/$1/;
-(my $iurt_dat = '$Date: 2010-10-31 23:10:12 +0100 (dim. 31 oct. 2010) $')
+(my $iurt_dat = '$Date: 2010-10-31 23:10:12 +0100 (Sun, 31 Oct 2010) $')
 	=~ s/.*: ([\d-]* [\d:]*) .*/$1/;
 plog("MSG", "This is iurt2 revision $iurt_rev-$iurt_aut ($iurt_dat)");
 
@@ -697,7 +697,7 @@ plog('DEBUG', "using local user $run{user}, id $run{uid}");
 my $luser = $run{user} || 'builder';
 
 check_sudo_access()
-    or die "FATAL: you need to have sudo access to run $program_name";
+    or die "FATAL: you need to have sudo access on $config->{iurt_root_command} to run $program_name";
 
 my $debug_tag = $run{debug} && '_debug';
 $run{debug_tag} = $debug_tag;
@@ -1576,7 +1576,7 @@ sub find_provides {
 }
 
 sub check_sudo_access() {
-    return 0 == system("$sudo -S /bin/true &>/dev/null </dev/null");
+    return 0 == system("$sudo -l -n $config->{iurt_root_command} &>/dev/null </dev/null");
 }
 
 __END__
