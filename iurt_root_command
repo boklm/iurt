@@ -112,6 +112,28 @@ $run{todo} = [];
     [ "", "modprobe", 1, "<module>]", 
     "modprobe try to modprobe the given module if authorized.", 
     \&modprobe, "Modprobing" ],
+   [ "", "tar", [
+   ["", "tar", 2, "<file> <directory>", "tar directory into file",
+        sub {    
+            my ($tmp, @arg) = @_; 
+            $tmp->[0] ||= {}; 
+            push @$tmp, @arg; 
+            1;
+        }, "Setting tar command arguments"], 
+    ], "<file> <directory>", 
+    "Create tarball", 
+    \&tar, "Create tarball" ],
+   [ "", "untar", [
+   ["", "untar", -1, "<file> <directory> [files]", "untar file into directory (optionally selecting files only)",
+        sub {    
+            my ($tmp, @arg) = @_; 
+            $tmp->[0] ||= {}; 
+            push @$tmp, @arg; 
+            1;
+        }, "Setting untar command arguments"], 
+    ], "<file> <directory> [files]", 
+    "Uncompress tarball", 
+    \&untar, "Uncompress tarball" ],
 );
 
 open(my $LOG, ">&STDERR");
@@ -283,3 +305,42 @@ sub ln {
     link $file1, $file2;
 }
 
+sub check_tar_authorized {
+    my ($file, $dir) = @_;
+    if (!$ENV{SUDO_USER}) {
+	plog('FAIL', "must be run from sudo");
+	return;
+    }
+    my $authorized = (getpwnam($ENV{SUDO_USER}))[7];
+    if (!$authorized) {
+	plog('FAIL', "can't find home for $ENV{SUDO_USER}");
+	return;
+    }
+    if ($file !~ /^\Q$authorized\E/ || $dir !~ /^\Q$authorized\E/) {
+	plog('FAIL', "(un)tar: $file or $dir forbidden");
+	return;
+    }
+
+    1;
+}
+
+sub tar {
+    my ($_run, $_opt, $file, $dir) = @_;
+    check_tar_authorized($file, $dir) or return;
+    return !system('tar', 'caf', $file, '-C', $dir, '.');
+}
+
+sub untar {
+    my ($_run, $_opt, $file, $dir, @o_files) = @_;
+    if (!$file || !$dir) {
+	plog('FAIL', "untar: missing arguments");
+	return;	
+    }
+    check_tar_authorized($file, $dir) or return;
+    if (any { /^-/ } @o_files) {
+	plog('FAIL', "untar: options forbidden");
+	return;	
+    }
+    mkdir_p($dir);
+    return !system('tar', 'xf', $file, '-C', $dir, @o_files);
+}
