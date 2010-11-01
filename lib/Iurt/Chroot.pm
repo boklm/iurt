@@ -510,14 +510,6 @@ sub build_chroot {
 		"$tmp_chroot/etc/sysconfig", "$tmp_chroot/proc",
 	        "$tmp_chroot/var/lib/rpm");
 
-    # create empty files
-    foreach ('/etc/mtab') {
-	system($sudo, 'touch', "$tmp_chroot$_");
-    }
-
-    system($sudo, 'mknod', "$tmp_chroot/dev/null", 'c', 1, 3);
-    system("$sudo chmod a+rw $tmp_chroot/dev/null");
-
     #system(qq($sudo sh -c "echo 127.0.0.1 localhost > $tmp_chroot/etc/hosts"));
     # warly some program perform a gethostbyname(hostname) and in the cluster the 
     # name are not resolved via DNS but via /etc/hosts
