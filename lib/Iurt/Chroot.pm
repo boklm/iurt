@@ -556,13 +556,13 @@ sub build_chroot {
     system($sudo, 'chroot', $tmp_chroot, 'adduser', '-o', '--uid', 499, 'builder');
     # FIXME: <mrl> Be careful! Damn ugly hack right below!
     sudo($run, $config, "--rm", "$tmp_chroot/var/lib/rpm/__db*");
-    system("$sudo umount $tmp_chroot/proc &> /dev/null");
-    system("$sudo umount $tmp_chroot/dev/pts &> /dev/null");
+    sudo($run, $config, "--umount", "$tmp_chroot/proc");
+    sudo($run, $config, "--umount", "$tmp_chroot/dev/pts");
     if ($run->{icecream}) {
-	system("$sudo umount $tmp_chroot/var/cache/icecream &> /dev/null");
+	sudo($run, $config, "--umount", "$tmp_chroot/var/cache/icecream");
     }
     if (-d "$tmp_chroot/urpmi_medias/") {
-	system("$sudo umount $tmp_chroot/urpmi_medias");
+	sudo($run, $config, "--umount", "$tmp_chroot/urpmi_medias");
     }
     return sudo($run, $config, "--tar", $chroot_tar, $tmp_chroot);
 }
