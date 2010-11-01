@@ -554,12 +554,6 @@ sub build_chroot {
     # CM: Choose a sub-500 uid to prevent collison with $luser
     #
     system($sudo, 'chroot', $tmp_chroot, 'adduser', '-o', '--uid', 499, 'builder');
-    sudo($run, $config, "--mkdir", "-p", "$tmp_chroot/home/builder/rpm");
-    foreach my $p (qw(RPMS BUILD SPECS SRPMS SOURCES tmp)) {
-	-d "$tmp_chroot/home/builder/rpm/$p" and next;
-	sudo($run, $config, "--mkdir", "$tmp_chroot/home/builder/rpm/$p");
-    }
-    system($sudo, 'chown', '-R', 499, "$tmp_chroot/home/builder");
     # FIXME: <mrl> Be careful! Damn ugly hack right below!
     sudo($run, $config, "--rm", "$tmp_chroot/var/lib/rpm/__db*");
     system("$sudo umount $tmp_chroot/proc &> /dev/null");
