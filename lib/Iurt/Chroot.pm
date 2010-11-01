@@ -445,7 +445,7 @@ sub create_chroot {
 	    }
 	} else {
 	    plog('DEBUG', "decompressing /var/log/qa from $chroot_tar in $tmp_chroot");
-	    system($sudo, 'tar', 'xf', $chroot_tar, '-C', $tmp_chroot, "./var/log/qa");
+	    sudo($run, $config, '--untar', $chroot_tar, $tmp_chroot, "./var/log/qa");
 
 	    my $qa;
 	    if (open $qa, "$tmp_chroot/var/log/qa") {
