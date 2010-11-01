@@ -134,6 +134,9 @@ $run{todo} = [];
     ], "<file> <directory> [files]", 
     "Uncompress tarball", 
     \&untar, "Uncompress tarball" ],
+    [ "", "umount", 1, "<directory>]", 
+    "umount the given directory", 
+    \&umount, "Unmounting" ],
 );
 
 open(my $LOG, ">&STDERR");
@@ -343,4 +346,9 @@ sub untar {
     }
     mkdir_p($dir);
     return !system('tar', 'xf', $file, '-C', $dir, @o_files);
+}
+
+sub umount {
+    my ($_run, $dir) = @_;
+    return !system("umount", $dir);
 }
