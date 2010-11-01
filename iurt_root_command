@@ -354,5 +354,6 @@ sub untar {
 
 sub umount {
     my ($_run, $dir) = @_;
+    check_path_authorized($dir) or return;
     return !system("umount", $dir);
 }
