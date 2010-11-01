@@ -28,6 +28,7 @@ use Mkcd::Commandline qw(parseCommandLine usage);
 use MDK::Common;
 use File::NCopy qw(copy);
 use Iurt::Util qw(plog_init plog);
+use Cwd 'realpath';
 
 my $arg = @ARGV;
 my (@params, %run);
@@ -319,7 +320,10 @@ sub check_path_authorized {
 	plog('FAIL', "can't find home for $ENV{SUDO_USER}");
 	return;
     }
-    if ($path !~ /^\Q$authorized\E/) {
+
+    #- check authorization for canonicalized path (with .. and symlinks resolved)
+    my $realpath = realpath($path);
+    if ($realpath !~ /^\Q$authorized\E/) {
 	plog('FAIL', "$path forbidden");
 	return;
     }
