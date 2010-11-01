@@ -570,7 +570,7 @@ sub build_chroot {
     if (-d "$tmp_chroot/urpmi_medias/") {
 	system("$sudo umount $tmp_chroot/urpmi_medias");
     }
-    return !system($sudo, 'tar', 'czf', $chroot_tar, '-C', $tmp_chroot, '.');
+    return sudo($run, $config, "--tar", $chroot_tar, $tmp_chroot);
 }
 
 sub check_build_chroot {
