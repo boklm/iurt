@@ -308,8 +308,8 @@ sub ln {
     link $file1, $file2;
 }
 
-sub check_tar_authorized {
-    my ($file, $dir) = @_;
+sub check_path_authorized {
+    my ($path) = @_;
     if (!$ENV{SUDO_USER}) {
 	plog('FAIL', "must be run from sudo");
 	return;
@@ -319,8 +319,8 @@ sub check_tar_authorized {
 	plog('FAIL', "can't find home for $ENV{SUDO_USER}");
 	return;
     }
-    if ($file !~ /^\Q$authorized\E/ || $dir !~ /^\Q$authorized\E/) {
-	plog('FAIL', "(un)tar: $file or $dir forbidden");
+    if ($path !~ /^\Q$authorized\E/) {
+	plog('FAIL', "$path forbidden");
 	return;
     }
 
@@ -333,7 +333,7 @@ sub tar {
 	plog('FAIL', "tar: missing arguments");
 	return;	
     }
-    check_tar_authorized($file, $dir) or return;
+    check_path_authorized($file) && check_path_authorized($dir) or return;
     return !system('tar', 'caf', $file, '-C', $dir, '.');
 }
 
@@ -343,7 +343,7 @@ sub untar {
 	plog('FAIL', "untar: missing arguments");
 	return;	
     }
-    check_tar_authorized($file, $dir) or return;
+    check_path_authorized($file) && check_path_authorized($dir) or return;
     if (any { /^-/ } @o_files) {
 	plog('FAIL', "untar: options forbidden");
 	return;	
