@@ -138,6 +138,9 @@ $run{todo} = [];
     [ "", "umount", 1, "<directory>]", 
     "umount the given directory", 
     \&umount, "Unmounting" ],
+    [ "", "useradd", 3, "<directory> <username> [uid]", 
+    "Add user in given chroot", 
+    \&useradd, "Useradd" ],
 );
 
 open(my $LOG, ">&STDERR");
@@ -360,4 +363,10 @@ sub umount {
     my ($_run, $dir) = @_;
     check_path_authorized($dir) or return;
     return !system("umount", $dir);
+}
+
+sub useradd {
+    my ($_run, $dir, $username, $o_uid) = @_;
+    check_path_authorized($dir) or return;
+    return !system('chroot', $dir, 'useradd', if_($o_uid, '-o', '--uid', $o_uid), $username);
 }
