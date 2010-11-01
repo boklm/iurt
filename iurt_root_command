@@ -329,6 +329,10 @@ sub check_tar_authorized {
 
 sub tar {
     my ($_run, $_opt, $file, $dir) = @_;
+    if (!$file || !$dir) {
+	plog('FAIL', "tar: missing arguments");
+	return;	
+    }
     check_tar_authorized($file, $dir) or return;
     return !system('tar', 'caf', $file, '-C', $dir, '.');
 }
