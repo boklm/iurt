@@ -1,0 +1,285 @@
+#!/usr/bin/perl
+#
+# Copyright (C) 2006 Mandriva
+# 
+# Author: Florent Villard <warly@mandriva.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#
+# run commands which needs root privilege
+#
+use lib '/usr/local/lib/perl/iurt/lib';
+
+use strict;
+my $program_name = 'iurt_root_command';
+use Mkcd::Commandline qw(parseCommandLine usage);
+use MDK::Common;
+use File::NCopy qw(copy);
+use Iurt::Util qw(plog_init plog);
+
+my $arg = @ARGV;
+my (@params, %run);
+$run{program_name} = $program_name;
+
+my %authorized_modules = ('unionfs' => 1);
+my $sudo = '/usr/bin/sudo';
+
+$run{todo} = [];
+@params = ( 
+    #    [ "one letter option", "long name option", "number of args (-X means ´at least X´)", "help text", "function to call", "log info"]
+    #
+    # no_rsync, config_help and copy_srpm kept for compatibility reasons
+    #
+    [ "", $program_name, 0, "[--verbose <level>] 
+		    [--modprobe <module>] 
+		    [--mkdir [--parents] <dir1> <dir2> ... <dirn>]", 
+    "$program_name is a perl script to execute commands which need root privilege, it helps probram which needs occasional root privileges for some commands.", 
+    sub { $arg or usage($program_name, \@params) }, "Running $program_name" ],
+    [ "", "cp", [
+   ["", "cp", -1, "[-r] <file1> <file2> ... <filen> <dest>]", "copy the files to dest",
+        sub {    
+            my ($tmp, @arg) = @_; 
+            $tmp->[0] ||= {}; 
+            push @$tmp, @arg; 
+            1;
+        }, "Setting cp command arguments"], 
+        ["r", "recursive", 0, "",  
+        "Also copy directories and subdirectories",  
+        sub { my ($tmp) = @_; $tmp->[0]{recursive} = 1; 1 }, "Set the recursive flag"], 
+    ], "[-r] <file1> <file2> ... <filen> <dest>", 
+    "Copy files", 
+    \&cp, "Copying files" ],
+   [ "", "ln", [
+   ["", "ln", 2, "<file1> <file2>", "link file1 to file2",
+        sub {    
+            my ($tmp, @arg) = @_; 
+            $tmp->[0] ||= {}; 
+            push @$tmp, @arg; 
+            1;
+        }, "Setting ln command arguments"], 
+#        ["r", "recursive", 0, "",  
+#        "Also create needed parents directories",  
+#        sub { my ($tmp) = @_; $tmp->[0]{recursive} = 1; 1 }, "Set the recursive flag"], 
+    ], "<file1> <file2>", 
+    "Link files", 
+    \&ln, "Linking files" ],
+    [ "", "mkdir", [
+    ["", "mkdir", -1, "[--parents] <dir1> <dir2> ... <dirn>]", "mkdir create the given path",
+        sub {    
+            my ($tmp, @arg) = @_; 
+            $tmp->[0] ||= {}; 
+            push @$tmp, @arg; 
+            1;
+        }, "Setting auto mode arguments"], 
+        ["p", "parents", 0, "",  
+        "Also create needed parents directories",  
+        sub { my ($tmp) = @_; $tmp->[0]{parents} = 1; 1 }, "Set the parents flag"], 
+    ], "[--parents] <dir1> <dir2> ... <dirn>]", 
+    "mkdir create the given path", 
+    \&mkdir, "Creating the path" ],
+    [ "", "rm", [
+   ["", "rm", -1, "[-r] <file1> <file2> ... <filen>", "remove the provided files",
+        sub {    
+            my ($tmp, @arg) = @_; 
+            $tmp->[0] ||= {}; 
+            push @$tmp, @arg; 
+            1;
+        }, "Setting rm command arguments"], 
+        ["r", "recursive", 0, "",  
+        "Also create needed parents directories",  
+        sub { my ($tmp) = @_; $tmp->[0]{recursive} = 1; 1 }, "Set the recursive flag"], 
+    ], "[-r] <file1> <file2> ... <filen>", 
+    "Remove files", 
+    \&rm, "Removing files" ],
+    [ "", "initdb", 1 , "<chroot>]", 
+    "perform a rpm --initdb in the chroot.", 
+    \&initdb, "Initializing the rpm database" ],
+    [ "v", "verbose", 1, "<verbose level>", 
+    "modprobe try to modprobe the given module if authorized.", 
+    sub { $run{verbose} = $_[0]; 1 }, "Setting verbose level" ],
+    [ "", "modprobe", 1, "<module>]", 
+    "modprobe try to modprobe the given module if authorized.", 
+    \&modprobe, "Modprobing" ],
+);
+
+open(my $LOG, ">&STDERR");
+$run{LOG} = sub { print $LOG @_ };
+
+plog_init($program_name, $LOG, $run{verbose});
+#plog_init($program_name, $LOG, 7, 1);
+
+my $todo = parseCommandLine($program_name, \@ARGV, \@params);
+@ARGV and usage($program_name, \@params, "@ARGV, too many arguments");
+
+my $ok = 1;
+foreach my $t (@$todo)  {
+    plog('DEBUG', $t->[2]);
+    my $ok2 = &{$t->[0]}(\%run, @{$t->[1]});
+    $ok2 or plog("ERROR: $t->[2]");
+    $ok &&= $ok2;
+}
+plog('DEBUG', "Success!") if $ok;
+exit !$ok;
+
+sub modprobe {
+    my ($_run, $module) = @_;
+    if (!$authorized_modules{$module}) {
+	plog("ERROR: unauthorized module $module");
+	return 0;
+    }
+    open my $modules, '/proc/modules';
+    while (my $m = <$modules>) {
+	if ($m =~ /unionfs/) {
+	    return 1;
+	}
+    }
+    system($sudo, "/sbin/depmod", "-a");
+    !system($sudo, "/sbin/modprobe", "-f", $module);
+}
+
+sub mkdir {
+    my ($_run, $opt, @dir) = @_;
+    foreach my $path (@dir) {
+	-d $path and next;
+	if ($path =~ m,/dev|/proc|/root|/var, && $path !~ /chroot|unionfs/) {
+	    plog('FAIL', "ERROR: $path creation forbidden");
+	}
+	if ($opt->{parents}) {
+	    mkdir_p $path;
+	} else {
+	    mkdir $path;
+	}
+    }
+    1;
+}
+
+sub initdb {
+    my ($_run, $chroot) = @_;
+    if (-d $chroot && $chroot !~ /chroot|unionfs/) {
+	plog('FAIL', "rpm --initdb not authorized in $chroot");
+	return 0;
+    }
+    !system('rpm', '--initdb', '--root', $chroot);
+}
+
+sub rm {
+    my ($_run, $opt, @files) = @_;
+    my $ok = 1;
+    my $done;
+    my $unauthorized = "^(/etc|/root|/dev|/var|/lib|/usr)";
+
+    foreach my $f (@files) {
+	if (-d $f) {
+	    if (!$opt->{recursive}) {
+		plog('WARN', "can't remove directories without the -r option");
+		$ok = 0;
+	    } else {
+		if ($f =~ m,$unauthorized,) {
+		    plog('FAIL', "removal of $f forbidden");
+		    $ok = 0;
+		} else {
+		    system($sudo, 'rm', '-rf', $f);
+		    plog('DEBUG', "removing $f");
+		    $done = 1;
+		}
+	    }
+	} else {
+	    if ($f =~ m,/$unauthorized,) {
+		plog("removal of $f forbidden");
+		$ok = 0;
+	    } else {
+		# CM: The original regexp was /\*?/, which doesn't seem to be
+		#     what we want. Check if we can always glob instead of
+		#     testing, or if glob expansion is needed at all
+
+		if ($f =~ /[*?]/) {
+		    foreach my $file (glob $f) {
+			if ($f =~ m,$unauthorized,) {
+			    plog('FAIL', "removal of $f forbidden");
+			    $ok = 0;
+			} else {
+			    unlink $file;
+			    $done = 1;
+			    plog('DEBUG', "removing $file");
+			}
+		    }
+		} else {
+		    unlink $f;
+		    $done = 1;
+		    plog('DEBUG', "removing $f");
+		}
+	    }
+	}
+    }
+    if (!$done) { plog('DEBUG', "nothing deleted") }
+    $ok;
+}
+
+sub cp {
+    my ($_run, $opt, @files) = @_;
+    my $ok = 1;
+    my $done;
+    my $dest = pop @files;
+    my $unauthorized = "^(/etc|/root|/dev|/var|/lib|/usr)";
+    if ($dest =~ /$unauthorized/ || $dest eq '/') {
+	plog('FAIL', "copying to $dest forbidden");
+	return;
+    }	
+    foreach my $f (@files) {
+	if (-d $f) {
+	    if (!$opt->{recursive}) {
+		plog('WARN', "can't copy directories without the -r option");
+		$ok = 0;
+	    } else {
+		system($sudo, 'cp', '-raf', $f);
+		plog('DEBUG', "copying $f -> $dest");
+		$done = 1;
+	    }
+	} else {
+	    if ($f =~ /\*?/) {
+		foreach my $file (glob $f) {
+		    if (copy $file, $dest) {
+			$done = 1;
+			plog('DEBUG', "copying $file -> $dest");
+		    } else {
+			$ok = 0;
+			plog('FAIL', "copying $file to $dest failed ($!)");
+		    }
+		}
+	    } else {
+		if (copy $f, $dest) {
+		    $done = 1;
+		    plog('DEBUG', "copying $f -> $dest");
+		} else {
+		    $ok = 0;
+		    plog('FAIL', "copying $f to $dest failed ($!)");
+		}
+	    }
+	}
+    }
+    if (!$done) { plog('DEBUG', "nothing copied") }
+    $ok;
+}
+
+sub ln {
+    my ($_run, $_opt, $file1, $file2) = @_;
+    my $unauthorized = "^(/etc|/root|/dev|/var|/lib|/usr)";
+    if ($file2 =~ /$unauthorized/ || $file2 eq '/') {
+	plog('FAIL', "linking to $file2 forbidden");
+	return;
+    }	
+    link $file1, $file2;
+}
+

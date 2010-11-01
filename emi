@@ -1,0 +1,289 @@
+#!/usr/bin/perl
+#
+# Copyright (C) 2005,2006 Mandriva
+# 
+# Author: Florent Villard <warly@mandriva.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#
+# upload packages in queue when all the mandatory architectures are done
+#
+# TODO
+# 
+# - take the packages in done/ and upload them with youri in queue/
+# - check that the mandatory architectures are present
+#
+# PREFIX : sprintf "$year%02d%02d%02d%02d%02d.$user.$host.${$}_", $mon, $mday, $hour, $min, $sec;
+
+use strict;
+use MDK::Common;
+use Iurt::Config qw(config_usage get_date config_init dump_cache init_cache get_author_email);
+use Iurt::Process qw(check_pid);
+use Iurt::Mail qw(sendmail);
+use Iurt::File qw(check_upload_tree);
+use Iurt::Util qw(plog_init plog);
+use Data::Dumper;
+my %run;
+my $program_name = 'emi';
+$run{program_name} = $program_name;
+
+open(my $LOG, ">&STDERR");
+plog_init($program_name, $LOG, 7, 1);
+$run{LOG} = sub { print $LOG @_ };
+
+my $HOME = $ENV{HOME};
+
+my $configfile = "$HOME/.upload.conf";
+
+my %config_usage = ( 
+    admin => {
+	desc => 'mail address of the bot administrator',
+	default => 'distrib-admin@mandrivalinux.org'
+    },
+    'arch' => {  
+	desc => "List of arch",
+	default => [ 'i586', 'x86_64', 'ppc' , 'sparcv9' ]
+    },
+    'arch_translation' => {  
+	desc => "Renaming of arch",
+	default => { 'sparc64' => 'sparcv9' }
+    },
+    http_queue => {
+	desc => 'Address where log can be consulted',
+	default => 'http://kenobi.mandriva.com/queue/'
+    },
+    mandatory_arch => {
+	desc => 'List of mandatory architecture to be able to upload',
+	default => [ 'i586', 'x86_64' ]
+    },
+    tmp => {
+	desc => "Temporary directory",
+	default => "$HOME/tmp/"
+    },
+    root => {
+	desc => 'Architecture root dir',
+	default => "/mnt/BIG/dis/"
+    },
+    cache_home => {
+	desc => 'Where to store the cache files',
+	default => "$HOME/.bugs"
+    },
+    upload_user => {
+	desc => 'User who is uploading packages',
+	default => 'mandrake'
+    },
+    queue => {
+	desc => 'root directory of the various upload queues',
+	default => '/home/mandrake/uploads/'
+    },
+    ssh_option => {
+	desc => "SSH options",
+	default => "-o ConectTimeout=20"
+    },
+);
+
+my $config;
+if (-f $configfile) {
+    $config = eval(cat_($configfile))
+	or die "FATAL $program_name: syntax error in $configfile";
+} else {
+    $config = {};
+}
+
+config_usage(\%config_usage, $config) if $run{config_usage};
+config_init(\%config_usage, $config, \%run);
+
+$run{pidfile_home} = $config->{tmp};
+$run{pidfile} = "upload";
+my $pidfile = check_pid(\%run);
+
+#my $cache = init_cache(\%run, $config, { arch => {} });
+my $cache =  { arch => {} };
+
+my ($_fulldate, $daydate) = get_date();
+$run{daydate} = $daydate;
+
+my $todo = "$config->{queue}/todo/";
+my $done = "$config->{queue}/done/";
+my $reject = "$config->{queue}/rejected/";
+
+my %pkg_tree;
+my %excluded;
+
+
+#
+# Gather data from upload tree
+#
+
+sub done_func {
+    my ($_todo, $f, $m, $s, $r) = @_;
+
+    if ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*\.([^.]+)\.rpm)$/) {
+	my ($prefix, $rpm, $arch) = ($1, $2, $3);
+	$arch = $config->{arch_translation}{$arch} if $config->{arch_translation}{$arch};
+	plog('DEBUG', "found rpm $rpm ($prefix)");
+	$pkg_tree{$prefix}{path} = "/$f/$m/$s";
+	$pkg_tree{$prefix}{arch}{$arch} = 1;
+	$pkg_tree{$prefix}{target} = $f;
+	$pkg_tree{$prefix}{section} = "$m/$s";
+	push @{$pkg_tree{$prefix}{srpms}}, $rpm if $arch eq 'src';
+	push @{$pkg_tree{$prefix}{rpms}} , $rpm;
+    } elsif ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*)\.done$/) {
+	my ($prefix, $arch) = ($1, $2);
+	#plog("found .done ($prefix)");
+	$arch = $config->{arch_translation}{$arch} if $config->{arch_translation}{$arch};
+	$cache->{arch}{$prefix}{$arch} = 1;
+    } elsif ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*)\.excluded$/) {
+	my ($prefix, $arch) = ($1, $2);
+	$arch = $config->{arch_translation}{$arch} if $config->{arch_translation}{$arch};
+	plog('DEBUG', "found .excluded ($prefix)");
+	$cache->{arch}{$prefix}{$arch} = 1;
+	$excluded{$prefix}{$arch} = 1;
+    }
+}
+
+sub todo_func {
+    my ($_todo, $_f, $_m, $_s, $r) = @_;
+
+    if ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*\.([^.]+)\.rpm)$/) {
+	my ($prefix, $rpm) = ($1, $2);
+	plog('DEBUG', "found todo rpm $rpm ($prefix)");
+	push @{$pkg_tree{$prefix}{todo}}, $rpm;
+    }
+}
+
+check_upload_tree(\%run, $done, \&done_func,);
+check_upload_tree(\%run, $todo, \&todo_func,);
+
+# Once the tree is checked, ulri can be launched again
+unlink $pidfile;
+
+
+#
+# Decide what should be uploaded
+#
+
+foreach my $prefix (keys %pkg_tree) {
+    my $target = $pkg_tree{$prefix}{target};
+    my $path = $pkg_tree{$prefix}{path};
+    my $section = $pkg_tree{$prefix}{section};
+    my %missing;
+
+    plog('NOTIFY', "processing $prefix");
+    plog('DEBUG', "... in $path");
+    my $ok = 1;
+    my $has_arched_packages = scalar(difference2([ keys %{$pkg_tree{$prefix}{arch}} ], [ qw(src noarch) ]));
+    foreach my $m (if_($has_arched_packages, @{$config->{mandatory_arch}}), 'src') {
+	$excluded{$prefix}{$m} and next;
+	my $x = "yes";
+	if (!$pkg_tree{$prefix}{arch}{$m}) {
+	    if (!$cache->{arch}{$prefix}{$m}) {
+		$missing{$m} = 1;
+		$x = "no";
+		$ok = 0;
+	    } else {
+		$x = "yes (in cache)";
+	    }
+	}
+	plog('INFO', " mandatory architecture $m present: $x");
+    }
+
+    unless ($ok) {
+	plog('INFO', "mandatory arch", join(' ', keys %missing),
+				"missing, waiting");
+	next;
+    }
+
+    #
+    # All mandatory archs found, upload
+    #
+
+    my @packages;
+    my ($user) = $prefix =~ /\d{14}\.(\w+)\.\w+\.\d+$/;
+
+    plog('OK', "all archs done: $prefix");
+    foreach my $rpm (@{$pkg_tree{$prefix}{rpms}}) {
+	push @packages, "$done/$path/${prefix}_$rpm";
+        plog('OK', " uploading $rpm in $done/$path");
+    }
+
+    $user ||= $config->{upload_user};
+
+
+    my $command = "/usr/bin/sudo -H -u $config->{upload_user} /usr/bin/perl -I/usr/share/mdv-youri-core/lib -I/usr/share/mdv-youri-submit/lib /usr/share/mdv-youri-submit/bin/youri-submit --verbose --config /etc/youri/submit-queue.conf --define user=$user --define prefix=$prefix --define section=$section $target @packages &> $done/$path/$prefix.youri";
+
+    plog('DEBUG', "running $command");
+    if (!system($command)) {
+	plog('INFO', "upload succeeded");
+
+	# now check if we need to keep the current srpm in todo
+	my $all_uploaded = 1;
+
+	foreach my $arch (@{$config->{arch}}) {
+	    if (!$cache->{arch}{$prefix}{$arch}) {
+		$all_uploaded = 0;
+	    }
+	}
+
+	if ($all_uploaded) {
+	    plog("cleaning upload tree for $prefix");
+	    # remove srpm
+	    # remove lock
+	}
+    } else {
+	# should send a mail or something
+	plog('ERR', "upload failed ($!), rejecting files in $reject/$path/");
+	foreach my $rpm (@{$pkg_tree{$prefix}{rpms}}) {
+	    link "$done/$path/${prefix}_$rpm", "$reject/$path/${prefix}_$rpm";
+	    plog('ERR', "ERROR: link of $rpm failed ($!)");
+	}
+	link "$done/$path/$prefix.youri", "$reject/$path/$prefix.youri";
+
+	my ($user) = $prefix =~ /\d{14}\.(\w+)\.\w+\.\d+/;
+	if ($user) {
+	    my $text = qq(The upload of the following packages failed:\n);
+	    my $rpms;
+	    foreach my $rpm (@{$pkg_tree{$prefix}{rpms}}) {
+		$rpm =~ /src\.rpm$/ or next;
+		$rpms .= "$rpm ";
+		$text .= "- $rpm\n";
+	    }
+	    my $to =  get_author_email($user) || "Unknown <$config->{admin}>";
+	    my $cc;
+	    $text .= "\nUpload log available in $config->{http_queue}/rejected/$path/$prefix.youri\n";
+
+	    sendmail($to, $cc, "Upload failed for $rpms", $text, "Emi the upload bot <$config->{admin}>", 0);
+	}
+
+	# should delete the files
+    }
+
+    # delete the files which should have heen either put in queue or rejected
+    unlink $_ foreach @packages;
+
+    # keep the log file for debugging
+    # unlink "$done/$path/$prefix.youri";
+
+    # unlink the sources rpm, other arch will be able to grab it into
+    # the repository
+    foreach (@{$pkg_tree{$prefix}{todo}}) {
+	plog('DEBUG', "unlink $todo/$path/${prefix}_$_");
+	unlink "$todo/$path/${prefix}_$_";
+    }
+}
+
+#dump_cache(\%run);
+exit();
+

@@ -1,0 +1,1497 @@
+#!/usr/bin/perl
+#
+# Copyright (C) 2005 Mandrakesoft
+# Copyright (C) 2005,2006 Mandriva
+# 
+# Author: Florent Villard <warly@mandriva.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#
+# NAME
+#
+# uiurt - micro iurt
+#
+# DESCRIPTION
+#
+# Minimal, strict, functionality to build packages in a chroot.
+#
+# Does not try to be smart and resolve host environment problems, but just
+# fail and report insted.
+#
+# TODO
+#
+# - use a cache (rpmctl cache for example) to find maintainer
+# - add icecream compilation support
+# - add a --group option to compile a set of packages (in progress)
+# - add a function to update a packages when it obviously need to be recompile
+# - Maybe call the function from the initial todo list (thus making the
+#   argument ordering important)
+# - Change the packager tag in the chroot to have the one who submit the package
+
+use strict;
+use RPM4::Header;
+use Iurt::Config qw(config_usage get_date get_prefix config_init dump_cache_par get_maint get_date check_arch %arch_comp get_package_prefix);
+use Data::Dumper;
+use URPM;
+use Iurt::DKMS;
+use Iurt::Urpmi;
+use Iurt::Chroot qw(add_local_user create_temp_chroot remove_chroot clean_unionfs clean_all_unionfs clean_all_chroot_tmp check_build_chroot clean_chroot);
+use Iurt::Process qw(perform_command clean kill_for_good sudo);
+use Iurt::Mail qw(sendmail);
+use Iurt::Util qw(plog_init plog);
+use File::NCopy qw(copy);
+use File::Path qw(mkpath);
+use File::Spec::Functions qw(rel2abs);
+use File::Basename qw(fileparse);
+# I did not manage to make locks work over the network
+#use File::lockf;
+use Mkcd::Commandline qw(parseCommandLine usage);
+use MDK::Common;
+use Filesys::Df qw(df);
+
+my $program_name = 'iurt2';
+my $VERSION = '0.6.2';
+# sessing parameters
+my $sudo = '/usr/bin/sudo';
+my $arg = @ARGV;
+my (@params, %run);
+$run{program_name} = $program_name;
+	
+$run{todo} = [];
+@params = ( 
+    #    [ "one letter option", "long name option", "number of args (-X means ´at least X´)", "help text", "function to call", "log info"]
+    #
+    # no_rsync, config_help and copy_srpm kept for compatibility reasons
+    #
+    [ "", $program_name, 0, "[--cache] [--chrooted-urpmi <media prefix>] [--concurrent-run] [--config foo value] [--warn] [--verbose integer]
+            [--copy-srpm] [--debug] [--distro] [--no-rsync] [--clean user1 user2 user3] [--clean-all] [--shell] [--stop {p|c|i|l|b|a|s}]
+ 	    [--use-system-distrib] [--dir] [--help foo?] [--log filename] [--group] [--unionfs]
+ 	    [--upload [--markrelease] [--source]] [--dir] [--help foo?] [--log filename]  [--unionfs] [--status] [--ignore-failure]
+	    [--repository <distribution path>]
+ 	    {--config_help | --dkms {--media <media regexp>}
+	    --chroot --arch {i586|x86_64|ppc} --distro {cooker|2006.0|community/2006.0|...} } |
+ 	    --rebuild {cooker|2006.0|community/2006.0|...} {i586|x86_64|ppc|...} {filename1.src.rpm} {filename2.src.rpm} ... {filenamen.src.rpm} }", 
+    "$program_name is a perl script to rebuild automatically several rpm in chroot, given a sourcerpm repository, and mail authors or rebuilder when problems occurs.
+
+		e.g.: iurt --repository /dis/ -p foo\@foo.net -r cooker x86_64  /SRPMS/main/release/mkcd-4.2.5-1mdv2007.1.src.rpm", 
+    sub { $arg or usage($program_name, \@params) }, "" ],
+    [ "", "distro", 1, "<distro>", 
+    "Set the distribution",
+    sub { ($run{distro}) = @_; 1 }, "Setting the distribution" ],
+    [ "", "dkms", [                                                                                                                                     
+        ["", "dkms", 0, "",                                  
+	"Set the DKMS rebuild mode",
+        sub {    
+            my ($tmp, @arg) = @_; 
+            $tmp->[0] ||= {}; 
+            push @$tmp, @arg; 
+            1;
+        }, "Setting auto mode arguments"], 
+        ["k", "kmedia", 1, "<kernel media regexp>",  
+        "Media Regexp to limit the kernel search to",  
+        sub { my ($tmp, $kmedia) = @_; $tmp->[0]{kmedia} = $kmedia; 1 }, "Limiting rebuild to the kernel in the given media regexp"], 
+        ["m", "media", 1, "<media regexp>",  
+        "Media Regexp to limit rebuild to",  
+        sub { my ($tmp, $media) = @_; $tmp->[0]{media} = $media; 1 }, "Limiting rebuild to the given media regexp"], 
+], "[options]",  
+    "Set the DKMS rebuild mode",
+    sub { my ($opt) = @_; $run{dkms} = $opt; 1 }, "Running a DKMS rebuild run" ],
+    [ "a", "arch", 1, "<architecture>", 
+    "Set the architecture",
+    sub { ($run{my_arch}) = @_; 1 }, "Setting architecture" ],
+    [ "", "cache", 0, "", 
+    "Use the global cache file",
+    sub { $run{use_cache} = 1 }, "Activating cache use" ],
+    [ "", "copy-srpm", 0, "", 
+    "Copy also the regenerated SRPM",
+    sub { $run{copy_srpm} = 1 }, "Activating the copy_srpm mode" ],
+    [ "", "copy_srpm", 0, "", 
+    "Copy also the regenerated SRPM",
+    sub { $run{copy_srpm} = 1 }, "Activating the copy_srpm mode" ],
+    [ "c", "chroot", 0, "", 
+    "Check chroot and update it if needed",
+    sub { $run{chroot} = 1 }, "Activating chroot updating" ],
+    [ "", "chrooted-urpmi", [
+        [ "", "chrooted-urpmi", 1, "",
+	"Create urpmi media inside the chroot instead of using --root (media prefix is like http:///server.mandriva.com/dis/)",
+	sub {
+            my ($tmp, @arg) = @_; 
+            $tmp->[0] ||= {}; 
+            push @$tmp, @arg; 
+            1;
+	}, "Setting chrooted-urpmi options" ],
+        ["m", "media", -1, "<media1> <media2> ... <median>",  
+        "Media to add instead of --distrib",  
+        sub { my ($tmp, @media) = @_; $tmp->[0]{media} = \@media; 1 }, "Limiting rebuild to the kernel in the given media regexp"], 
+    ] , "[options] <media prefix>", 
+    "Create urpmi media inside the chroot instead of using --root (media prefix is like http:///server.mandriva.com/dis/)",
+    sub { my ($opt, $media) = @_; $opt->{rooted_media} = $media; $run{chrooted_urpmi} = $opt; 1 }, "Activating chroot media" ],
+    [ "", "clean-all", 0, "", 
+    "Clean all remaining chroots for all the users",
+    sub { $run{clean_all} = 1 }, "Activating clean chroot flag" ],
+    [ "", "clean", -1, "<user 1> <user 2> ... <user n>", 
+    "Clean remaining chroot before runing",
+    sub { $run{clean} = \@_ }, "Activating clean chroot flag" ],
+    [ "", "concurrent-run", 0, "", 
+    "Allow several iurt to run on different machines (slower)",
+    sub { $run{concurrent_run} = 1 }, "Activating concurrent run checks" ],
+    [ "d", "dir", -1, "", 
+    "Directory where to find packages to rebuild", 
+    sub { $run{extra_dir} = \@_; 1 }, "Adding extra source packages directories" ],
+    [ "", "config", 2, "<configuration keyword> <value>", 
+    "Override a configuration file variable",
+    sub { my ($key, $value) = @_; $run{config}{$key} = $value }, "Overriding configuration variable" ],
+    [ "", "config-help", 0, "", 
+    "Explain configuration files keywords", 
+    sub { $run{config_usage} = 1 }, "Activating debug mode" ],
+    [ "", "config_help", 0, "", 
+    "Explain configuration files keywords", 
+    sub { $run{config_usage} = 1 }, "Activating debug mode" ],
+    [ "", "debug", 0, "", 
+    "Activate debug mode", 
+    sub { $run{debug} = 1 }, "Activating debug mode" ],
+    [ "g", "group", 0, "", 
+    "Activate group mode, packages will be compiled as a global set, not as individual packages", 
+    sub { $run{group} = 1 }, "Activating the group mode" ],
+    [ "", "ignore-failure", 0, "", 
+    "Do not take into account the failure cache, try to recompile all the packages not synchronized", 
+    sub { $run{ignore_failure} = 1 }, "Activating the mode ignoring previous failure" ],
+    [ "u", "unionfs", 0, "", 
+    "Activate unionfs mode", 
+    sub { $run{unionfs} = 1 }, "Activating unionfs mode" ],
+    [ "l", "log", 1, "<log file>", 
+    "Log file.", 
+    sub { 
+	$run{log} = pop @_; 
+	open my $log, ">$run{log}" or die "unable to open $run{log}\n";
+     $run{LOG} = sub { print $log @_ };
+	print *$log, "command line: @ARGV\n";
+	1;
+    }, "Log file" ],
+    [ "m", "media", -1, "<media 1> <media 2> ... <media 3>", 
+    "Media to rebuild", 
+    sub { ($run{media}) = @_; 1 }, "Adding a media to rebuild" ],
+    [ "n", "no", 0, "", 
+    "Perform all the check but do not compile anything", 
+    sub { ($run{no_compile}) = 1 }, "Setting the no compilation flag" ],
+    [ "p", "packager", 1, "<packager>", 
+    "Use a specific packager",
+    sub { ($run{packager}) = @_ }, 'Setting packager tag'], 
+    [ "r", "rebuild", -2, "<distro> <architecture> <srpm 1> <srpm 2> ... <srpm n>", 
+    "Rebuild the packages, e.g. $program_name -r cooker x86_64 /home/foo/rpm/SRPMS/foo-2.3-12mdv2007.0.src.rpm", 
+    sub { 
+	$run{rebuild} = 1; 
+	$run{distro} = shift @_;
+       	$run{my_arch} = shift @_;
+
+	foreach (@_) {
+	    my ($path, $srpm);
+
+	    unless (-f $_ && -r $_) {
+		die "FATAL $program_name: $_ not a file or cannot be read\n";
+	    }
+
+	    ($srpm, $path) = fileparse(rel2abs($_));
+	    ($srpm =~ /\.src\.rpm$/) || die "FATAL: $_ doesn't look like an SRPM";
+
+	    if (check_arch($_, $run{my_arch})) {
+		plog('DEBUG', "force build for $2 (from $1)");
+		push @{$run{todo}}, [ $path, $srpm, 1 ];
+	    } else {
+		plog("ERROR: $_ could not be build on $run{my_arch}, ignored.");
+	    }
+	}
+	1;
+	}, "Activating rebuild mode" ],
+    [ "", "upload", [
+	["", "upload", 0, "[options]", 
+	"Upload the rebuild packages", 
+	sub {   my ($tmp) = @_;
+	    $tmp->[0] ||= {};
+	    1;
+	}, "Setting upload options"],
+	[ "m", "markrelease", 0, "", 
+	"Mark SVN directory when uploading the packages", 
+	sub { $run{markrelease} = 1 }, "Adding markrelease repsys option" ],
+	[ "s", "source", 0, "", 
+	"Upload the source package as wells", 
+	sub { $run{source_upload} = 1 }, "Setting source flag for upload" ],
+    ], "[options]", 
+    "Upload the rebuild packages", 
+    sub { $run{upload} = 1 }, "Setting the upload flag" ],
+    [ "", "use-old-chroot", 1, "<chroot path>", 
+    "Use the given chroot as chroot (usefull for debugging)", 
+    sub { ($run{use_old_chroot}) = @_ }, "Using given chroot" ],
+    [ "", "no_rsync", 0, "", 
+    "Do not send build log to the distant rsync server", 
+    sub { $run{no_rsync} = 1 }, "Setting the no rsync warn flag" ],
+    [ "", "no-rsync", 0, "", 
+    "Do not send build log to the distant rsync server", 
+    sub { $run{no_rsync} = 1 }, "Setting the no rsync warn flag" ],
+    [ "", "use-system-distrib", 1, "<media>", 
+    "Use the current system urpmi configuration", 
+    sub { $run{use_system_distrib} = shift; 1 }, "Setting system distrib for urpmi configuration" ],
+    [ "v", "verbose", 1, "<verbose level>", 
+    "Give more info messages about what is going on (level from 1 to 10)", 
+    sub { $run{verbose} = $_[0]; 1 }, "Setting verbose level" ],
+    [ "w", "warn", 0, "", 
+    "Warn maintainer of the packages about problem in the rebuild", 
+    sub { $run{warn} = 1; 1 }, "Setting warn flag to warn maintainers" ],
+    [ "", "shell", 0, "", 
+    "Dump to a shell into the newly created chroot with sudo on rpm, urpmi, urpme and urpmi.addmedia", 
+    sub { 
+	($run{shell}) = 1; 
+	1 }, "Setting option to dump to a shell" ],
+    [ "", "stop", 1, "<rpm step>", 
+    "Perform rpmbuild -b<rpm step> (p c i l b a s) instead of rpmbuild -ba and then open a shell in the chroot", 
+    sub { 
+	($run{stop}) = @_; 
+	1;
+    }, "Setting rpm build option" ],
+    [ "", "repository", 1, "<distribution root path>",
+    "Set a repository path if one is not created in the configuration file",
+    sub {
+	($run{repository}) = @_;
+	1;
+    } , "Setting the repository" ],
+    [ "", "status", 1, "<mail>", 
+    "Send a status mail to the provided mail address", 
+    sub { 
+	($run{status_mail}) = @_; 
+	1;
+    }, "Setting status mail option" ],
+    [ "", "with", 1, "<flag>",
+    "Use specified --with flag with rpm (can be used multiple times)",
+    sub {
+	($run{with_flags}) = $run{with_flags} . " --with " . @_[0];
+	1;
+    }, "Adding specified extra --with parameter to rpm" ],
+    [ "", "without", 1, "<flag>",
+    "Use specified --without flag with rpm (can be used multiple times)",
+    sub {
+	($run{with_flags}) = $run{with_flags} . " --without " . @_[0];
+	1;
+    }, "Adding specified extra --without parameter to rpm" ],
+);
+
+open(my $LOG, ">&STDERR");
+$run{LOG} = sub { print $LOG @_ };
+
+plog_init($program_name, $LOG, $run{verbose}, 1);
+#plog_init($program_name, $LOG, 7, 1); # CM: hardcoded for now, will fix ASAP
+
+
+# Display version information
+#
+(my $iurt_rev = '$Rev: 145712 $') =~ s/.*: (\d+).*/$1/;
+(my $iurt_aut = '$Author: blino $') =~ s/.*: (..).*/$1/;
+(my $iurt_dat = '$Date: 2007-03-18 09:25:20 -0300 (Sun, 18 Mar 2007) $')
+	=~ s/.*: ([\d-]* [\d:]*) .*/$1/;
+plog("MSG", "This is iurt2 revision $iurt_rev-$iurt_aut ($iurt_dat)");
+
+
+my $todo = parseCommandLine($program_name, \@ARGV, \@params);
+@ARGV and usage($program_name, \@params, "@ARGV, too many arguments");
+foreach my $t (@$todo)  {
+    plog('DEBUG', $t->[2]);
+    &{$t->[0]}(@{$t->[1]}) or plog('ERR', $t->[2]);
+}
+
+$run{distro_tag} = $run{distro};
+$run{distro_tag} =~ s,/,-,g;
+
+my $real_arch = `uname -m`;
+chomp $real_arch;
+my $HOME = $ENV{HOME};
+my $configfile = "$HOME/.iurt.$run{distro_tag}.conf";
+
+plog('DEBUG', "load config: $configfile");
+my $config;
+if (-f $configfile) {
+    $config = eval(cat_($configfile))
+	or die "FATAL $program_name: syntax error in $configfile";
+} else {
+    $config = {};
+}
+
+if ($run{repository}) {
+    plog('DEBUG', "overriding configuration repository by the one given in the command line");
+    $config->{repository} = $run{repository}
+}
+
+if (!$config->{repository}) {
+    die "FATAL $program_name: no repository have been defined (use --repository to specify one on the command line"
+}
+
+my $urpmi = Iurt::Urpmi->new(run => \%run, config => $config, urpmi_options => "-v --no-verify-rpm --nolock --auto --ignoresize");
+$run{urpmi} = $urpmi;
+
+if (!$run{chrooted_urpmi} && $run{group}) {
+    die "FATAL $program_name: option --chrooted-urpmi is mandatory if --group is selected";
+} 
+
+my %config_usage = ( 
+    admin => {
+	desc => 'Mail of the administrator of packages builds',
+	default => ''
+    },
+    all_media => {
+	desc => 'List of known media',
+	default => {
+	    'main' => [ '' ],
+	    'contrib' => [ '' ]
+	}
+    },
+    basesystem_media_root => {
+	desc => 'Name of the media holding basesystem packages',
+	default => sub {
+	    my ($config, $run) = @_;
+	    "$config->{repository}/$run->{distro}/$run->{my_arch}/";
+	}
+    },
+    basesystem_media => {
+	desc => 'Where to find basesystem packages',
+	default => 'main/release'
+    },
+    basesystem_packages => {
+	desc => 'List of packages needed for the chroot creation',
+	default => [
+	    'basesystem',
+	    'rpm-build',
+	    'rpm-mandriva-setup-build',
+	    'sudo',
+	    'urpmi',
+	    'curl',
+	]
+    },
+    build_timeout => {
+	desc => 'Maximum build time after which the build process is terminated',
+	default => {
+	    default => 18000,
+	},
+    },
+    cache_home => {
+	desc => 'Where to store the cache files',
+	default => "$HOME/.bugs"
+    },
+    cache_min_size => {
+	desc => 'Minimal size to consider a cache file valid',
+	default => 1000000
+    },
+    check_binary_file => {
+	desc => 'Packages rebuild should be checked, however sometime rpm is segfaulting and the test is not correct',
+	default => 0
+    },
+    iurt_root_command => {
+	desc => 'Program to run sudo command',
+	default => '/usr/sbin/iurt_root_command'
+    },
+    distribution => {
+	desc => 'Name of the packages distribution',
+	default => 'Mandriva Linux'
+    },
+    home => {
+	desc => 'Home dir',
+	default => $HOME
+    },
+    install_chroot_binary => {
+	desc => 'Tool used to create initial chroot',
+	default => 'install-chroot-tar.sh'
+    },
+    local_home => {
+	desc => 'Where to build packages',
+	default => $HOME
+    },
+    local_upload => {
+	desc => 'Where to store build packages and log',
+	default => ''
+    },
+    local_spool => {
+	desc => 'To override the directory where all the results are stored',
+	default => ''
+    },
+    log_size_limit => {
+	desc => 'Maximum authorized size for a log file',
+	default => '100M'
+    },
+    log_size_date => {
+	desc => 'Number of days log should be kept',
+	default => '30'
+    },
+    log_url => {
+	desc => 'Where the log can be seen',
+	default => ''
+    },
+    minimum_package_number => {
+	"Minimum number of packages in a synthesis file to consider it valid",
+	default => 1000
+    },
+    max_command_retry => {
+	"Maximum number of retry Iurt will perform for a given command",
+	default => 20
+    },
+    no_mail  => {
+	desc => 'Hash table with people mail address where we should not send any mails',
+	default => {}
+    },
+    packager => {
+	desc => 'Name of the build bot',
+	default => 'Iurt'
+    },
+    prompt => { 
+	desc => 'Default prompt in the chroot',
+	default => qq{PS1='[\\033[00;33m\\]iurt $run{distro}\\[\\033[00m\\]] \\[\\033[00;31m\\]\\u\\[\\033[00;32m\\]\\h\\[\\033[00m\\]\\w\$ '},
+    },
+    repository => {
+	desc => 'Prefix of the repositories',
+	default => ''
+    },
+    rsync_to => {
+	desc => 'Server where the result of the builds should be rsynced (name@server:path format)',
+	default => ''
+    },
+    sendmail => {
+	desc => 'If the bot will send mail reports regarding build',
+	default => 0
+    },
+    supported_arch => {
+	desc => 'Table of supported architecture',
+	default => ['i586', 'x86_64']
+    },
+    upload => {
+	desc => 'Where to copy build packages',
+	default => "$HOME/uploads/"
+    },
+    vendor => {
+	desc => 'Name of the packages vendor',
+	default => 'Mandriva'
+    },
+);
+
+config_usage() if $run{config_usage};
+$run{my_arch} or usage($program_name, \@params, "no architecture given (media $run{media}, run{my_arch} $run{my_arch}, todo", join(', ', @{$run{todo}}));
+if (!$arch_comp{$real_arch}{$run{my_arch}}) {
+    die "FATAL $program_name: could not compile $run{my_arch} binaries on a $real_arch";
+}
+config_init(\%config_usage, $config, \%run);
+
+$config->{upload} .= $run{distro};
+$config->{upload} =~ s/community//g;
+if ($run{distro} ne 'cooker') {
+    if ($run{media} ne 'main') {
+	$config->{upload} .= "/$run{media}";
+    }
+} elsif ($run{media} eq 'contrib') {
+    $config->{upload} =~ s/cooker/contrib/g;
+}
+
+my $lock = $run{media};
+my $local; # FIXME: (tv) variable $local assigned, but not read
+if (!$lock && $run{chroot}) {
+    $lock = 'chroot';
+    $local = 1;
+}
+if (!$lock && $run{dkms}) {
+    $lock = 'dkms';
+    $local = 0;
+}
+$run{lock} = $lock;
+
+# cache file name is needed early to remove the manual lock file if the
+# lock mechanism does not work
+
+mkpath $config->{cache_home};
+my $cachefile = "$config->{cache_home}/iurt.$run{distro_tag}.$run{my_arch}.$lock.cache";
+$run{cachefile} = $cachefile;
+if (!$run{debug} && $run{media} || $run{chroot}) {
+    $run{pidfile_home} = "$config->{cache_home}/";
+    $run{pidfile} = "iurt.$run{distro_tag}.$run{my_arch}.$lock";
+    check_pid(\%run);
+}
+
+$config->{local_upload} ||= $config->{local_home};
+my $local_spool;
+if ($config->{local_spool}) {
+    $local_spool = $config->{local_spool};
+} else {
+    $local_spool = "$config->{local_upload}/iurt/$run{distro_tag}/$run{my_arch}/$run{media}/";
+}
+
+# Squash double slashes
+$local_spool =~ y!/!!s;
+
+plog('INFO', "local spool: $local_spool");
+if (!-d "$local_spool/log") {
+    plog('DEBUG', "creating local spool $local_spool");
+    mkpath("$local_spool/log")
+	or die "FATAL: could not create local spool dir $local_spool ($!)";
+}
+$run{local_spool} = $local_spool;
+
+my $cache;
+my $clear_cache = 1;
+if (-f $cachefile && $run{use_cache}) {
+    plog('INFO', "loading cache file $cachefile");
+
+    $cache = eval(cat_($cachefile))
+	or plog('ERR', "FATAL: could not load cache $cachefile ($!)");
+
+    if (!$cache) {
+	opendir my $cache_dir, $config->{cache_home};
+	my $to_load;
+
+	foreach my $file (readdir $cache_dir) {
+	    (my $date) = $file =~ /iurt\.$run{distro_tag}\.$run{my_arch}\.$run{media}\.cache\.tmp\.(\d{8})/ or next;
+	    if ($date > $to_load && -s "$config->{cache_home}/$file" > $config->{cache_min_size}) {
+		$to_load = $date;
+		$cachefile = "$config->{cache_home}/$file";
+	    }
+	}
+
+	plog('NOTIFY', "loading alternate cache file $cachefile");
+	$cache = eval(cat_($cachefile))
+		or plog('ERR', "FATAL: could not load cache $cachefile ($!)");
+    }
+    $clear_cache = 0 if $cache;
+}
+
+if ($clear_cache) {
+    $cache = {
+	rpm_srpm => {},
+	failure => {},
+	queue => {},
+	warning => {},
+	run => 1,
+	needed => {},
+	no_unionfs => {}
+    };
+}
+$run{cache} = $cache;
+
+my (%srpm_version, @wrong_rpm, %provides, %pack_provide, $to_compile, %maint);
+$to_compile = @{$run{todo}};
+$to_compile += check_media(\%run, $cache, $config, \%srpm_version,
+	\@wrong_rpm, \%provides, \%pack_provide, \%maint) if $run{media};
+$to_compile += search_packages(1, $cache, \%provides, \%run, \%maint,
+	\%srpm_version, @{$run{extra_dir}}) if $run{extra};
+
+my $dkms;
+if ($run{dkms}) {
+    $dkms = Iurt::DKMS->new(run => \%run, config => $config);
+    $to_compile += $dkms->search_dkms;
+}
+$run{to_compile} = $to_compile;
+
+dump_cache_par(\%run);
+
+plog("Packages to build: $to_compile");
+
+my ($fulldate, $daydate) = get_date();
+if ($run{use_cache}) {
+    $run{run} = $cache->{run};
+    $run{run} ||= 1;
+    $cache->{run} = $run{run} + 1;
+} else {
+    $run{run} = "0.$fulldate";
+}
+$run{daydate} = $daydate;
+plog('DEBUG', "using $run{run} as chroot extension");
+$run{user} = $ENV{SUDO_USER} || $ENV{USER};
+$run{uid} = getpwnam $run{user};
+
+plog('DEBUG', "using local user $run{user}, id $run{uid}");
+my $luser = $run{user} || 'builder';
+
+check_sudo_access()
+    or die "FATAL: you need to have sudo access to run $program_name";
+
+my $debug_tag = $run{debug} && '_debug';
+$run{debug_tag} = $debug_tag;
+if ($run{unionfs} && !$run{use_old_chroot}) {
+    plog(1, "adding unionfs module");
+    sudo(\%run, $config, "--modprobe", "unionfs") or $run{unionfs} = 0;
+    if ($run{unionfs}) {
+	$run{unionfs_dir} = "$config->{local_home}/iurt_unionfs$debug_tag/";
+	remove_chroot(\%run, $run{unionfs_dir}, \&clean_all_unionfs);
+	$run{unionfs_dir} = "$run{unionfs_dir}/$run{user}/";
+	-d $run{unionfs_dir} or mkdir $run{unionfs_dir};
+    }
+}
+
+my (%done, $done);
+$run{done} = \%done;
+my $home = $config->{local_home};
+my $union_id = 1;
+$run{unionfs_tmp} = $run{unionfs};	
+
+my ($chroot_name, $chroot_tmp, $chroot, $chroot_tar);
+$chroot_name = "chroot_$run{distro_tag}$debug_tag";
+if (!$run{use_old_chroot}) {
+    $chroot_tmp = "$config->{local_home}/chroot_tmp";
+
+    if (!-d $chroot_tmp) {
+	mkdir $chroot_tmp;
+    } else {
+	remove_chroot(\%run, $chroot_tmp, \&clean_all_chroot_tmp, $chroot_name);
+    }
+
+    $chroot_tmp = "$config->{local_home}/chroot_tmp/$run{user}";
+    if (!-d $chroot_tmp) {
+	mkdir $chroot_tmp;
+    }
+    $chroot_tmp = "$config->{local_home}/chroot_tmp/$run{user}/$chroot_name.$run{run}";
+    $run{chroot_tmp} = $chroot_tmp;
+
+    $chroot = "$config->{local_home}/$chroot_name";
+} else {
+    plog(1, "using given chroot $run{use_old_chroot}");
+    $chroot_tmp = $run{use_old_chroot};
+    $chroot = $run{use_old_chroot};
+}
+$run{chroot_path} = $chroot;
+$chroot_tar = "$config->{local_home}/$chroot_name.$run{my_arch}.tar.gz";
+$run{chroot_tar} = $chroot_tar;
+# 20061222 warly 
+# even in use_old_chroot mode we create the chroot if it does not exist (useful 
+# if the option is used for the first time
+if ($run{chroot} || !-d "$chroot/dev") {
+    check_build_chroot($chroot, $chroot_tar, \%run, $config) or die "FATAL $program_name: could not prepare initial chroot";
+}
+
+# now exit if there is nothing to do and it was just a cleaning pass
+if ($run{no_compile} || !@{$run{todo}} && !$run{debug} && !$run{shell} && !$run{rebuild}) {
+    send_status_mail(\%run, $config, $cache) if $run{status_mail};
+    plog("no package to compile :(");
+    unlink "$run{pidfile_home}/$run{pidfile}" if $run{pidfile};
+    exit();
+}
+
+plog('DEBUG', "running with pid $$");
+$run{prefix} = get_prefix($luser); 
+
+my $df = df $home;
+if ($df->{per} >= 99) {
+    die "FATAL: not enough space on the filesystem, only $df->{bavail} KB on $home, full at $df->{per}%";
+}
+
+if ($run{shell}) {
+    if (!$run{use_old_chroot}) {
+	($union_id, my $chroot_tmp) = create_temp_chroot(\%run, $config,
+	$cache, $union_id, $chroot_tmp, $chroot_tar)
+	    or die "FATAL $program_name: could not create temporary chroot";
+    }
+    add_local_user($chroot_tmp, \%run, $config, $luser, $run{uid}) or die "FATAL $program_name: could not add local user";
+
+    #$urpmi->set_command($chroot_tmp);
+    $urpmi->urpmi_command($chroot_tmp, $luser);
+
+    $urpmi->install_packages('chroot', $chroot_tmp, $local_spool, \%pack_provide, 'configure', "[ADMIN] installation of urpmi and sudo failed in the chroot $run{my_arch}", { check => 1, maintainer => $config->{admin} }, 'urpmi', 'sudo') or die "FATAL $program_name: could not add urpmi and sudo in the chroot";
+    add_sudoers(\%run, $chroot_tmp, $luser);
+    if ($run{shell}) {
+	plog('NOTIFY', "dumping to a chrooted shell into $chroot_tmp");
+	exec $sudo, 'chroot', $chroot_tmp, '/bin/su', '-', $luser, '-c', "$config->{prompt} bash";
+	die "FATAL $program_name: could not exec chroot to $chroot_tmp ($!)";
+    }
+}
+
+# perform some cleaning before running to have some more space, rsync to
+# the server too in case previous iurt crashed
+
+if ($config->{rsync_to} && !$run{no_rsync}) { 
+    	# remove some old and very big log files not to saturate the server
+	system(qq(find $local_spool/log/ -name "*.log" \\( -size +$config->{log_size_limit} -or -mtime +$config->{log_size_date} \\) -exec rm -f {} \\;));
+	system('rsync', '--delete', '-alHPe', 'ssh -xc arcfour', "$local_spool/log/", "$config->{rsync_to}/$run{distro_tag}/$run{my_arch}/$run{media}/log/");
+}
+
+if ($run{dkms} && $run{dkms_todo}) {
+    $done += $dkms->dkms_compile($local_spool, $done);
+}
+
+# The next loop should be moved in a module someday
+
+# FIXME: (tv) kill this dead code or use it!!
+my $_s = sub { 
+    if ($run{main}) {
+	plog("dumping cache..."); 
+	dump_cache_par(\%run);
+	$Data::Dumper::Indent = 0;
+	$Data::Dumper::Terse = 1;
+	plog("Running environment:\n", Data::Dumper->Dump([\%run]), "\n");
+	plog("Configuration:\n", Data::Dumper->Dump([$config]), "\n");
+    }
+    exit();
+};
+#$SIG{TERM} = $s;
+#$SIG{INT} = $s;
+$run{main} = 1;
+
+my $rebuild;
+$run{group} = 0 if @{$run{todo}} == 1;
+if ($run{group}) { 
+    $rebuild = 1;
+    $urpmi->set_local_media($local_spool);
+    $urpmi->order_packages($union_id, \%provides, $luser)
+	or die "FATAL $program_name: could not order packages";
+}
+#
+# The build loop
+#
+my $prev_done = $done;
+do { 
+    $rebuild = 0;
+    $done = $prev_done;
+    for (my $i; $i < @{$run{todo}}; $i++) {
+	my ($dir, $srpm, $status) = @{$run{todo}[$i]};
+	
+	# CM: Set argv[0] (in the C sense) to something we can easily spot and
+	#     understand in process list
+	$0 = "Iurt: $run{distro_tag} $run{my_arch} $run{media} $srpm";
+
+	$status or next;
+	$done{$srpm} and next;
+	$done{$srpm} = 1;
+	check_version($srpm, \%srpm_version) or next;
+	if ($run{debug}) { $run{debug}++ == 2 and exit() }
+	$done++;
+	plog('NOTIFY', "Build package $srpm [$done/$to_compile]");
+	# FIXME unfortunately urpmi stalls quite often
+	my $retry = 0;
+	 
+	# current rpm is sometime segfaulting, and iurt is them blocked
+	# and cannot 
+	#
+	# $cache->{failure}{$srpm} = 1;
+	# dump_cache(\%run);
+retry:
+	$urpmi->clean_urpmi_process;
+	
+	if (!$run{use_old_chroot}) {
+	    (my $u_id, $chroot_tmp) = create_temp_chroot(\%run, $config,
+		$cache, $union_id, $chroot_tmp, $chroot_tar, $srpm) or next; 
+	    $union_id = $u_id;
+	}
+
+	$urpmi->urpmi_command($chroot_tmp, $luser);
+	$srpm =~ /(.*)-[^-]+-[^-]+\.src\.rpm$/ or next;
+	my ($maintainer, $cc);
+	if (!$run{warn}) {
+	    ($maintainer) = get_maint(\%run, $srpm);
+	    $cc = $maint{$srpm};#, maintainers\@mandriva.com";
+	    chomp $maintainer;
+	    if (!$maintainer || $maintainer eq 'NOT_FOUND') {
+		$maintainer = $cc;
+		#$cc = 'maintainers@mandriva.com'
+	    }
+	}
+	#($maintainer, $cc) = ($config->{admin},'');
+
+	plog('DEBUG', "creating user $luser in chroot");
+	add_local_user($chroot_tmp, \%run, $config, $luser, $run{uid}) or next;
+
+	my $old_srpm = $srpm;
+	my ($ret, $srpm, $spec) = $urpmi->recreate_srpm(\%run, $config,
+			$chroot_tmp, $dir, $srpm, $luser, $retry);
+	if ($ret == -1) {
+	    $retry = 1;
+	    goto retry;
+	} elsif (!$ret) {
+	    # CM: experimental: fail if we can't regenerate the srpm
+	    #     This should eliminate bouncers that block the input queue 
+	    #
+	    $srpm = $old_srpm;
+	    $cache->{failure}{$srpm} = 1;
+	    $run{status}{$srpm} = 'recreate_srpm_failure';
+	    dump_cache_par(\%run);
+	    dump_status($local_spool, \%run);
+	    next;
+	} 
+
+	(my $log_dirname = $srpm) =~ s/.*:(.*)\.src.rpm/$1/;
+	my $log_dir = "$local_spool/log/$log_dirname/";
+
+	# only create the log dir for the new srpm
+	mkdir $log_dir;
+	-d $log_dir or die "FATAL: could not create $log_dir (check permissions and group ownerships)";
+	
+	plog('INFO', "Install build dependencies");
+	my $path_srpm = "$chroot_tmp/home/$luser/rpm/SRPMS/";
+	
+	# on x86_64 the rpm database is getting corrupted and sometimes
+	# rpm do not found anymore installed packages, retrying several
+	# time to be sure something is really broken
+
+	my $ok = $urpmi->install_packages($srpm, $chroot_tmp, $local_spool, \%pack_provide, 'install_deps', "[REBUILD] install of build dependencies of $srpm failed on $run{my_arch}", { maintainer => $maintainer }, "$path_srpm/$srpm");
+	if (!$ok) {
+	    $run{status}{$srpm} ||= 'install_deps_failure';
+	    next;
+	}
+
+	# try to workarround the rpm -qa db4 error(2) from dbcursor->c_get:
+	# No such file or directory
+	# system("sudo chroot $chroot_tmp rm -rf /var/lib/rpm/__db* &> /dev/null");
+	system("$sudo chroot $chroot_tmp rpm --rebuilddb &> /dev/null");
+
+	perform_command("$sudo chroot $chroot_tmp rpm -qa | sort", 
+	    \%run, $config, $cache, 
+	    logname => "rpm_qa", 
+	    hash => "rpm_qa_$srpm", 
+	    timeout => 60, 
+	    debug_mail => $run{debug},
+	    log => $log_dir); # or next; As this failed quite often, do not stop
+	plog('NOTIFY', "Building $srpm");
+	my $command = "rpmbuild --rebuild $run{with_flags} /home/$luser/rpm/SRPMS/$srpm";
+	if ($run{stop}) {
+	    $urpmi->install_packages('chroot', $chroot_tmp, $local_spool, \%pack_provide, 'configure', "[ADMIN] installation of urpmi and sudo failed in the chroot $run{my_arch}", { check => 1, maintainer => $config->{admin} }, 'urpmi', 'sudo');
+	    add_sudoers(\%run, $chroot_tmp, $luser);
+	    $command = "rpmbuild -b$run{stop} /home/$luser/rpm/SPECS/$spec";
+	}
+
+	my ($srpm_name) = $srpm =~ /(?:.*:)?(.*)-[^-]+-[^-]+\.src\.rpm$/;
+
+	if (!perform_command(qq(TMP=/home/$luser/tmp/ $sudo chroot $chroot_tmp /bin/su - $luser -c "$command"), 
+		\%run, $config, $cache, 
+		mail => $maintainer, 
+		error => "[REBUILD] $srpm from $run{distro_tag} does not build correctly on $run{my_arch}", 
+		logname => "build", 
+		hash => "build_$srpm", 
+		timeout => $config->{build_timeout}{$srpm_name} ? $config->{build_timeout}{$srpm_name} : $config->{build_timeout}{default},
+		srpm => $srpm,
+		debug_mail => $run{debug},
+		cc => $cc, 
+		log => $log_dir, 
+		error_regexp => 'rror.*ailed|Bad exit status|RPM build error',
+		callback => sub { 
+		    my ($opt, $output) = @_;
+		    if ($run{stop}) {
+			plog("dumping to a chrooted shell into $chroot_tmp (pid $$)");
+			# exec does not work because it seems stdin and out are shared between children
+			system($sudo, 'chroot', $chroot_tmp, '/bin/su', '-', $luser, '-c', "$config->{prompt} bash");
+			exit();
+		    }
+		    plog('DEBUG', "calling callback for $opt->{hash}");
+		    if ($run{unionfs_tmp} && $output =~ /no space left on device/i) {
+			plog('ERROR', "ERROR: running out of space to compile $srpm in unionfs mode, will recompile it in normal mode");
+			$cache->{no_unionfs}{$srpm} = 1;
+			return 1;
+		    } elsif ($run{unionfs_tmp} && $output =~ m,$home,) {
+			plog('ERROR', "ERROR: seems like building $srpm needs to access /proc/self/exe, which is broken with unionfs, will try to recompile it in non unionfs mode");
+			$cache->{no_unionfs}{$srpm} = 1;
+			return 1;
+		    } elsif ($output =~ /bin\/ld: cannot find -l(\S*)|configure.*error.* (?:-l([^\s]+)|([^\s]+) includes)/) {
+			my $missing = $1;
+			my @rpm = find_provides(\%run, \%pack_provide, $missing);
+			plog(5, "likely @rpm ($missing-devel) needed to rebuilt $srpm is not in build_requires");
+			if ($maintainer ne 'NOT_FOUND') {
+			    $opt->{mail} = $maintainer;
+			    #$opt->{mail} .= ", other_maint";
+			}
+			if (!$opt->{mail}) { 
+			    $opt->{mail} = $config->{admin};
+			}
+			if (@rpm > 1) {
+			    $opt->{error} = "[MISSING_BUILD_REQUIRES_TAG] one of @rpm ($missing-devel), needed to build $srpm, is not in buildrequires";
+			} elsif (@rpm == 1) {
+			    $opt->{error} = "[MISSING_BUILD_REQUIRES_TAG] @rpm ($missing-devel), needed to build $srpm, is not in buildrequires";
+			} else {
+			    $opt->{error} = "[MISSING_BUILD_REQUIRES_TAG] $missing-devel, needed to build $srpm, is not in buildrequires";
+			}
+			$cache->{buildrequires}{$srpm}{$missing} = \@rpm;
+			return;
+		    }
+		    1;
+		}, 
+		freq => 1)) {
+
+	    # FIXME
+	    # The simple algo used here is : 
+	    #  try to compile it with unionfs, if it runs out of space,
+	    #  compile it without the next time
+	    #
+	    #  This could be improved in keeping this srpm name for future
+	    #  version, but if we compile it on a new machine with more ram,
+	    #  or if next version compiles just fine with unionfs, we will
+	    #  loose the unionfs advantage. 
+	    #
+	    #  Maybe the right thing to do would be to first try to increase
+	    #  the tmpfs size (more than 50 % of the physical RAM), but this
+	    #  will lead to more swap usage, and slower compilation (and lost
+	    #  of the unionfs plus). Or to keep the faulty package a unionfs
+	    #  exception for some time, to save some more extra builds.
+
+	    if (!glob "$chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm") {
+		if ($run{unionfs_tmp} && $cache->{no_unionfs}{$srpm}) {
+		    goto retry;
+		}
+		$cache->{failure}{$srpm} = 1;
+		$run{status}{$srpm} = 'build_failure';
+		# 20060615
+		dump_cache_par(\%run);
+		dump_status($local_spool, \%run);
+		next;
+	    }
+	}
+
+	# do some cleaning if the compilation is successful
+	delete $cache->{needed}{$srpm} if defined $cache->{needed}{$srpm};
+	delete $cache->{buildrequires}{$srpm} if defined $cache->{buildrequires}{$srpm};
+	# FIXME It seems the glob is not correctly expanded any more, so listing the directory content to do so
+	opendir my $binfh, "$chroot_tmp/home/$luser/rpm/RPMS/";
+	my @packages;
+	foreach my $bindir (readdir $binfh) {
+	    -d "$chroot_tmp/home/$luser/rpm/RPMS/$bindir" or next;
+	    opendir my $rpmfh, "$chroot_tmp/home/$luser/rpm/RPMS/$bindir";
+	    push @packages, map { "$chroot_tmp/home/$luser/rpm/RPMS/$bindir/$_" } grep { !/src\.rpm$/ && /\.rpm$/ } readdir $rpmfh;
+	}
+
+	# 20060810 warly We should fail here, but rpm is currently
+	# segfaulting when trying to install packages
+
+	if ($config->{check_binary_file}) {
+	    $urpmi->install_packages($srpm, $chroot_tmp, $local_spool, \%pack_provide, 'binary_test', "[REBUILD] binaries packages generated from $srpm do not install correctly", { maintainer => $maintainer } ,@packages) or next;
+	} else  {
+	    my $successfile = "$local_spool/log/$srpm/binary_test_$srpm-1.log";
+	    open my $f, ">$successfile";
+	    print $f "$srpm build ok";
+	}
+	
+	$run{status}{$srpm} = 'ok';
+	delete $cache->{failure}{$srpm} if defined $cache->{failure}{$srpm};
+	if ($run{debug}) {
+	    plog("debug mode, skip other packages");
+	    exit();
+	} elsif ($run{group}) {
+	    # we should not move the package until they are all compiled
+	    plog("group mode, keep packages for local media ($srpm is done $done)");
+	    $run{done}{$srpm} = $done;
+	    $urpmi->add_to_local_media($chroot_tmp, $srpm, $luser);
+	} else { 
+	    plog('OK', "build successful, copying packages to $local_spool.");
+
+	    system("cp $chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm $local_spool &>/dev/null") and plog('ERR', "ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpm/RPMS/ to $local_spool ($!)");
+
+	    if ($run{copy_srpm}) {
+		# replace the old srpm
+		unlink "$local_spool/$old_srpm";
+
+		system("cp $chroot_tmp/home/$luser/rpm/SRPMS/$srpm $local_spool &>/dev/null") and plog('ERR', "ERROR: could not copy $srpm from $chroot_tmp/home/$luser/rpm/SRPMS/ to $local_spool ($!)");
+	    }
+	    process_queue($config, \%run, \@wrong_rpm, 1);
+	}
+	# dymp_cache each time so that concurrent process can get updated
+	dump_cache_par(\%run) if $run{concurrent_run};
+    }
+    if ($run{group}) {
+	for (my $i; $i < @{$run{todo}}; $i++) {
+	    my (undef, $srpm) = @{$run{todo}[$i]};
+	    if (!$run{done}{$srpm}) {
+		$rebuild = $urpmi->order_packages($union_id, \%provides, $luser);
+		last
+	    }
+	}
+	if ($prev_done == $done) {
+	    $rebuild = 0;
+	    if ($done == @{$run{todo}}) {
+		plog('OK', "all packages succesfully compiled, copying packages to $local_spool.");
+		system("cp $chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm $local_spool &>/dev/null") and plog('ERR', "ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpm/RPMS/ to $local_spool ($!)");
+		if ($run{copy_srpm}) {
+		    system("cp $chroot_tmp/home/$luser/rpm/SRPMS/*.src.rpm $local_spool &>/dev/null") and plog('ERR', "ERROR: could not copy SRPMS from $chroot_tmp/home/$luser/rpm/SRPMS/ to $local_spool ($!)");
+		}
+	    } else {
+		plog('FAIL', "some packages could not be compiled.");
+	    }
+	}
+    }
+} while $rebuild;
+
+my ($unionfs_dir) = $run{unionfs_dir} =~ m!(.*)/[^/]+/?!;
+if (!$run{debug} && !$run{use_old_chroot}) {
+    if ($run{unionfs}) {
+	clean_unionfs("$unionfs_dir/$run{user}", \%run, $run{run}, $union_id);
+    } else {
+	clean_chroot($chroot_tmp, $chroot_tar, \%run, $config, 1);
+    }
+}
+plog("reprocess generated packages queue");
+process_queue($config, \%run, \@wrong_rpm);
+
+dump_cache_par(\%run);
+
+plog('FAIL', "ERROR: RPM with a wrong SRPM name") if @wrong_rpm;
+if (@wrong_rpm && open my $file, ">$local_spool/log/wrong_srpm_names.log") {
+    foreach (@wrong_rpm) {
+	print $file "$_->[1] -> $_->[0] (", $cache->{rpm_srpm}{$_->[1]}, ")\n";
+    }
+}
+
+dump_status($local_spool, \%run);
+
+send_status_mail(\%run, $config, $cache) if $run{status_mail};
+
+if ($config->{rsync_to} && !$run{no_rsync}) { 
+    	# remove some old and very big log files not to saturate the server
+	system(qq(find $local_spool/log/ -name "*.log" \\( -size +$config->{log_size_limit} -or -mtime +$config->{log_size_date} \\) -exec rm -f {} \\;));
+	system('rsync', '--delete', '-alHPe', 'ssh -xc arcfour', "$local_spool/log/", "$config->{rsync_to}/$run{distro_tag}/$run{my_arch}/$run{media}/log/");
+}
+
+# one last try to clean
+plog('DEBUG', "clean remaining unionfs");
+if ($run{unionfs} && !$run{use_old_chroot}) {
+    remove_chroot(\%run, $unionfs_dir, \&clean_all_unionfs);
+}
+unlink "$run{pidfile_home}/$run{pidfile}" if $run{pidfile};
+
+exit;
+
+
+#
+#
+#
+
+sub check_needed {
+    my ($srpm, $cache, $provides) = @_;
+    if (!defined $cache->{needed}{$srpm} && !ref $cache->{needed}{$srpm}) { return 1 } 
+    my $ok = 1;
+    # migrate old cache format
+    my $ent = $cache->{needed}{$srpm};
+    if (ref $ent eq 'ARRAY') {
+	my $table = $ent;
+	$cache->{needed}{$srpm} = {};
+	foreach my $t (@$table) {
+	    my ($missing, $version, $maint) = @$t;
+	    $cache->{needed}{$srpm}{$missing} = {
+		version => $version,
+		maint => $maint
+	    };
+	}
+	$ent = $cache->{needed}{$srpm};
+    }
+    foreach my $name (keys %$ent) {
+	my ($package, $version, $maint) = @{$ent->{$name}}{'package', 'version', 'maint'};
+	# if packages does not exist anymore, it may have been rebuild, then try to recompute the build dependencies
+	last if $package && !$provides->{$package};
+	my $p_version = $provides->{$name};
+	if ($p_version) {
+	    next if $version == $p_version;
+	    next if URPM::ranges_overlap($version, $p_version);
+	}
+	$ok = 0;
+	if ($version) {
+	    $ent->{$name}{version} = $version;
+	}
+	my $v ||= $version;
+	if ($package) {
+	    plog("ERROR: $srpm needs package $package which requires missing $name $v to be compiled.");
+	} else {
+	    plog("ERROR: $srpm needs $name $v to be compiled.");
+	} 
+	# try to recompile it once in a while
+	last if $cache->{warning}{"install_deps_$srpm"}{$maint}++ % 72;
+	return 1;
+    }
+    delete $cache->{needed}{$srpm} if $ok;
+    $ok;
+}
+
+sub process_queue {
+    my ($config, $run, $wrong_rpm, $quiet) = @_;
+    return if !$run->{upload} && $quiet;
+    my $dir = "$config->{local_upload}/iurt/$run->{distro_tag}/$run->{my_arch}/$run->{media}/";
+    opendir my $rpmdir, $dir or return;
+    my $urpmi = $run->{urpmi};
+    foreach my $rpm (readdir $rpmdir) {
+	my ($rarch, $srpm) = $urpmi->update_srpm($dir, $rpm, $wrong_rpm);
+	$rarch or next;
+	plog($rpm);
+	next if !$run->{upload};
+	# recheck if the package has not been uploaded in the meantime
+	my $rpms_dir = "$config->{repository}/$run->{distro}/$run->{my_arch}/media/$run->{media}/";
+	if (! -f "$rpms_dir/$rpm") {
+	    my $err = system('/usr/bin/scp', "$dir/$rpm", $config->{upload} . "/$config->{extra_subdir}/RPMS/");
+	    # try to keep the opportunity to prevent disk full
+	    if ($err) {
+		plog("ERROR: process_queue: cannot copy $dir/$rpm to ", $config->{upload}, "/$config->{extra_subdir}/RPMS/ ($!)");
+		next;
+	    }
+	}
+	if ($run->{upload_source}) {
+
+	}
+	unlink "$dir/$rpm";
+	$cache->{queue}{$srpm} = 1;
+    }
+    closedir $rpmdir;
+}
+
+sub check_version {
+	my ($srpm, $srpm_version) = @_;
+	my ($srpm_name) = $srpm =~ /(.*)-[^-]+-[^-]+\.src\.rpm/;
+	if (URPM::ranges_overlap("= $srpm", ">= $srpm_version->{$srpm_name}")) {
+		$srpm_version->{$srpm_name} = $srpm;
+		return 1;
+	}
+	0;
+}
+
+sub check_pid {
+    my ($run, $local) = @_;
+    my $hostname = `hostname`;
+    chomp $hostname;
+    my $pidfile = $run->{pidfile};
+    my $lockfile = "$run->{pidfile_home}/$pidfile.$hostname.pid.lock";
+    plog("trying to lock $lockfile");
+    open my $lock, ">$lockfile";
+    my $lock_ok;
+    # lockf seems not to work, try to workarround, but this start to create lock on the lock for the lock of the file.
+    my $status = 1; #File::lockf::lock($lock);
+    if (!$status) {
+	$lock_ok = 1;
+    } else {
+	plog("ERROR: could not lock pid file (status $status $!)");
+	if (! -f "$lockfile.2") {
+	    plog("using $lockfile.2 as lock file");
+	    open my $lock2, ">$lockfile.2" or die "FATAL $program_name: could not open lock file $lockfile.2";
+	    print $lock2 $$;
+	    close $lock2;
+	}
+    }
+    if (!$run->{concurrent_run} && !$local) {
+	opendir my $dir, $run->{pidfile_home};
+	foreach my $f (readdir $dir) {
+	    my ($pid_host) = $f =~ /$pidfile\.pid\.(.*)\.pid$/ or next; 
+	    if ($pid_host ne $hostname) {
+		my $pf = "$run->{pidfile_home}/$f";
+		open my $test_PID, $pf;
+		my $pid = <$test_PID>;
+		my (@stat) = stat $pf;
+		my $time = $stat[9];
+		my $diff = time()-$time;
+		my $msg = "$program_name: an other iurt is running for $run->{my_arch} on $pid_host, pid $pid, since $diff seconds";
+		if ($diff < 36000) {
+		    plog("$msg\n");
+		    exit();
+		} else {
+		    plog("$msg, ignoring it");
+		}
+	    }
+	}
+    }
+    $run->{pidfile} .= ".$hostname.pid";
+    $pidfile = "$run->{pidfile_home}/$run->{pidfile}";
+    if (-f $pidfile)  {
+	my (@stat) = stat $pidfile;
+	open my $test_PID, $pidfile;
+	my $pid = <$test_PID>;
+	close $test_PID;
+	if (!$pid) {
+	    plog("ERROR: invalid pidfile ($pid), should be <pid>");
+	    unlink $pidfile;
+	}
+	if ($pid && getpgrp $pid != -1) {
+	    my $time = $stat[9];
+	    my $state = `ps h -o state $pid`;
+	    chomp $state;
+	    if ($time < time()-36000 || $state eq 'Z') {
+		plog("an other iurt pid $pid is running for a very long time or is zombie, killing it");
+		my $i;
+		while ($i < 5 && getpgrp $pid != -1) {
+		    kill_for_good($pid);
+		    $i++;
+		    sleep 1;
+		}
+	    } else  {
+		plog("an other iurt is running for $run->{my_arch}, pid $pid, since ", time()-$time, " seconds");
+		exit();
+	    }
+	} else {
+	    plog("a previous iurt for $run->{my_arch} seems dead, cleaning.");
+	    unlink $pidfile;
+	}
+    }
+    plog("setting $pidfile pid lock");
+    open my $PID, ">$pidfile" or die "FATAL $program_name: could not open pidfile $pidfile for writing";
+    print $PID $$;
+    close $PID;
+    if ($lock_ok) { 
+	File::lockf::ulock($lock);
+    } else {
+	unlink "$lockfile.2";
+    }
+    close $lock;
+    unlink $lockfile;
+}
+
+sub check_media {
+    my ($run, $cache, $config, $srpm_version, $wrong_rpm, $provides, $pack_provide, $maint) = @_;
+# We could rely on only parsing the synthesis, hoping that they are correct, however this scan is very fast, so...
+    foreach my $subdir (@{$config->{all_media}{$run->{media}}}) {
+	my $rpms_dir = "$config->{repository}/$run->{distro}/$run->{my_arch}/media/$run->{media}/$subdir/";
+	plog("checking current packages in $rpms_dir");
+	opendir my $rpmdir, $rpms_dir or die "Could not open $rpms_dir: $!"; 
+	my $urpmi = $run->{urpmi};
+	foreach my $rpm (readdir $rpmdir) {
+	    my ($rarch, $srpm) = $urpmi->update_srpm($rpms_dir, $rpm, $wrong_rpm);
+	    $rarch or next;
+	    $cache->{queue}{$srpm} = 1;
+	    $run{status}{$srpm} = 'ok';
+	    check_version($srpm, $srpm_version);
+	}
+	closedir $rpmdir;
+    }
+
+    foreach my $m (keys %{$config->{all_media}}) {
+	foreach my $subdir (@{$config->{all_media}{$m}}) {
+	    my $synthesis_file = "$config->{repository}/$run->{distro}/$run->{my_arch}/media/$m/$subdir/media_info/synthesis.hdlist.cz";
+	    if (-f $synthesis_file) {
+		plog("Parsing $synthesis_file");
+		if (open my $syn, "zcat $synthesis_file |") { 
+		    my @prov;
+		    my $nb;
+		    while (<$syn>) {
+			if (/^\@provides@(.*)/) {
+			    foreach my $p (split '@', $1) {
+                       if ($p =~ /([^[]+)(?:\[(.*)\])?/g) {
+                           push @prov, $1;
+                           $provides->{$1} = $2 || 1;
+                       }
+			    }
+			} elsif (/\@info\@([^@]+)@/) {
+			    $nb++;
+			    my $p = $1;
+			    my ($name) = $p =~ /(.*)-[^-]+-[^-]+\./;
+			    $provides->{$p} = 1;
+			    foreach (@prov) {
+				$pack_provide->{$_} = $name;
+			    }
+			    @prov = ();
+			}
+		    }
+		    $nb < $config->{minimum_package_number} and die "FATAL $program_name: synthesis files seems corrupted, only $nb packages found.";
+		} else {
+		    die "FATAL $program_name: Could not open $synthesis_file\n";
+		}
+	    }
+	}
+    }
+    #"
+    my $nb;
+    foreach my $subdir (@{$config->{all_media}{$run->{media}}}) {
+	$nb += search_packages(0, $cache, $provides, $run, $maint, $srpm_version, "$config->{repository}/$run->{distro}/SRPMS/$run->{media}/$subdir/");
+    }
+    $nb;
+}
+
+sub search_packages {
+    my ($clean, $cache, $provides, $run, $_maint, $srpm_version, @dir) = @_;
+    my ($to_compile, %rep);
+    plog("iurt search_package: @dir");
+    foreach my $dir (@dir) {
+	plog("checking SRPMS dir $dir");
+	opendir my $rpmdir, $dir or next;
+	foreach my $srpm (readdir $rpmdir) {
+	    # this is for the output of the new svn system
+	    if ($srpm =~ /^\@\d+:(.*)/) {
+		link "$dir/$srpm", "$dir/$1";
+		# unlink "$dir/$srpm";
+		$srpm = $1;
+	    }
+	    $srpm =~ /(.*)-[^-]+-[^-]+\.src\.rpm$/ or next;
+	    $run->{status}{$srpm} ||= 0;
+	    if ($config->{unwanted_packages} && $srpm =~ /$config->{unwanted_packages}/) { next }
+	    my $ok = 1;
+	    if (check_version($srpm, $srpm_version)) { 
+		if (!$run->{ignore_failure} && defined $cache->{failure}{$srpm}) {
+		    $run->{status}{$srpm} = 'build_failure';
+		    next;
+		}
+		my $check_needed = check_needed($srpm, $cache, $provides);
+		$run->{status}{$srpm} = 'missing_buildrequires' if !$check_needed;
+		-f "$dir/$srpm" or next;
+		if (!$cache->{queue}{$srpm} && $check_needed) {
+		    if (!check_arch("$dir/$srpm", $run{my_arch})) {
+			$run->{status}{$srpm} = 'not_on_this_arch';
+			next;
+		    }
+		    my $hdr = RPM4::Header->new("$dir/$srpm");
+		    my $changelog = $hdr->queryformat("%{CHANGELOGNAME}");
+		    my ($mail) = $changelog =~ /<(.*@.*)>/;
+		    $maint{$srpm} = $mail;
+		    print "$program_name: will try to compile $srpm\n";
+		    $to_compile++;
+		    push @{$run->{todo}}, [ $dir , $srpm, 1 ];
+		}
+		foreach my $arch (@{$config->{supported_arch}}) { #FIXME: (tv) this loop looks suspiciously broken
+		    $ok &&= $cache->{queue}{$srpm};
+		}
+	    }
+	    if ($clean && ($rep{$srpm} || $ok)) {
+		print "$program_name: cleaning $dir/$srpm\n";
+		unlink "$dir/build/$srpm";
+		unlink "$dir/$srpm";
+	    }
+	    $rep{$srpm} = 1;
+	}
+	closedir $rpmdir;
+    }
+    $to_compile;
+}    
+
+sub add_sudoers {
+    my ($_run, $chroot, $user) = @_;
+    my $file = "$chroot/etc/sudoers";
+    my $f;
+    if (!open $f, qq(| $sudo sh -c "cat > $file")) {
+	plog("ERROR: could not open $file ($!)");
+	return 0;
+    }
+    print $f qq(Cmnd_Alias RPM=/bin/rpm,/usr/sbin/urpmi,/usr/sbin/urpme,/usr/sbin/urpmi.addmedia,/usr/sbin/urpmi.update,/usr/sbin/urpmi.removemedia
+root    ALL=(ALL) ALL
+$user   ALL=(ALL) NOPASSWD:RPM
+);
+    close $f;
+    plog("adding sudo for /bin/rpm, /usr/sbin/urpmi and /usr/sbin/urpme");
+    -f $file or return 0;
+    1;
+}
+
+sub dump_status {
+    my ($local_spool, $run) = @_;
+    my $media = $run->{media} ? "$run->{media}." : "";
+    if (open my $file, ">$local_spool/log/status.${media}log") {
+	foreach my $srpm (sort keys %{$run->{status}}) {
+	    print $file "$srpm: ";
+	    if ($run{status}{$srpm}) {
+		print $file $run->{status}{$srpm};
+	    } else {
+		print $file "unknown";
+	    }
+	    print $file "\n";
+	}
+    }
+}
+
+#
+# CM: FIXME: should notify in case of recreate_srpm_failure
+#
+
+sub send_status_mail {
+    my ($run, $config, $cache) = @_;
+    my %output;
+
+    print "iurt compilation status\n";
+
+    foreach my $rpm (keys %{$run->{status}}) {
+	next if $run->{status}{$rpm} =~ /ok|not_on_this_arch/;
+
+	if ($run->{status}{$rpm} eq 'missing_buildrequires') {
+	    foreach my $missing (keys %{$cache->{needed}{$rpm}}) {
+		my $h = $cache->{needed}{$rpm}{$missing};
+		my $maint = $h->{maint} || 'Other';
+		my $package = $h->{package};
+		if ($package) {
+		    push @{$output{missing}{$maint}{$package}{$missing}{$h->{version}}}, $rpm;
+		} else {
+		    $output{missing}{$maint}{$rpm}{$missing}{$h->{version}} = 1;
+		}
+	    }
+        } elsif ($run->{status}{$rpm} eq 'build_failure') {
+	    my ($maint) = get_maint($run, $rpm);
+	    if ($cache->{buildrequires}{$rpm}) {
+		push @{$output{buildrequires}{$maint}}, $rpm;
+	    } else {
+		push @{$output{build}{$maint}}, $rpm;
+	    }
+	} elsif (!$run->{status}{$rpm}) {
+	    # need to find something more usefull to do at that point
+	    next;
+	}
+    }
+
+    my $text = "*** Missing buildrequires tag in specfile ***\n";
+    foreach my $maint (keys %{$output{buildrequires}}) {
+	$text .= "\n$maint\n";
+	foreach my $pack (keys %{$output{missing}{$maint}}) {
+	    foreach my $missing (keys %{$cache->{buildrequires}{$pack}}) {
+		my $rpms = $cache->{buildrequires}{$pack}{$missing};
+		if (@$rpms) {
+		    $text .= "  $pack should have a buildrequires on @$rpms (for $missing-devel)\n";
+		} else {
+		    $text .= "  $pack should have a buildrequires for $missing-devel\n";
+		}
+	    }
+	}
+    }
+
+    $text = "*** Missing dependencies ***\n";
+    foreach my $maint (keys %{$output{missing}}) {
+	$text .= "\n$maint\n";
+	foreach my $pack (keys %{$output{missing}{$maint}}) {
+	    foreach my $missing (%{$output{missing}{$maint}{$pack}}) {
+		my $h = $output{missing}{$maint}{$pack}{$missing};
+		foreach my $version (keys %$h) {
+		    if (ref $h->{$version}) {
+			$text .= "  $pack should be recompile because\n  $missing " . ($version ? "$version " : '') . "is not provided anymore\n";
+			$text .= "    to compile " . join("\n               ", @{$h->{$version}}) . "\n";
+		    } else {
+			$text .= "  $pack needs $missing " . ($version ? "$version " : '') . "\n";
+		    }
+		}
+	    }
+	}
+    }
+    $text .=  "\n*** Build failure ***\n";
+    foreach my $maint (keys %{$output{build}}) {
+	$text .= "\n$maint\n";
+	foreach my $rpm (@{$output{build}{$maint}}) {
+	    $text .= "  $rpm (see $config->{log_url}/$run{distro_tag}/$run{my_arch}/$run->{media}/log/$rpm/)\n";
+	}
+    }
+    print "$text\n";
+    sendmail($run->{status_mail}, '' , "Iurt report for $run->{my_arch}/$run->{media}", $text, "Iurt the rebuild bot <$config->{admin}>", 0);
+}
+
+sub find_provides {
+    my ($_run, $pack_provide, $p) = @_;
+    my @rpm;
+    foreach my $provides (keys %{pack_provide}) {
+	if ($provides =~ /$p/ && $provides =~ /devel/) {
+	    push @rpm, $pack_provide->{$provides};
+	}
+    }
+    @rpm;
+}
+
+sub check_sudo_access() {
+    open my $right, "$sudo -l |";
+    return 1 if ! $<;
+    local $_;
+    while (<$right>) {
+	/\(ALL\)\s+NOPASSWD:\s+ALL/ and return 1;
+    }
+    0;
+}
+
+__END__
+
+Discussion
+
+20061222 Warly
+  Group building
+  For the group building, we need to order the source packages, the problem is that we do not 
+  really know what will be the provides of the resulting packages before building the.
+  We could guess them by looking to older version, but that means that we need to have an access to
+  the media deps files (synthesis should be enough).
+  We can also perform a first pass of build to check which package build and then what are their
+  provides. For the second pass, we will them be able to use the previously build packages to
+  solve buildrequires. 
