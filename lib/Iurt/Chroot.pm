@@ -78,7 +78,7 @@ sub clean_chroot {
     }
  
     # First try
-    if (system($sudo, 'tar', '-C', $chroot, '-xf', $chroot_tar)) {
+    if (sudo($run, $config, '--untar', $chroot_tar, $chroot)) {
 	create_build_chroot($chroot, $chroot_tar, $run, $config);
     }
 
@@ -491,7 +491,7 @@ sub create_chroot {
 	$urpmi->clean_urpmi_process($chroot);
 	sudo($run, $config, '--rm', '-r', $chroot, $tmp_tar);
 	mkdir_p $chroot;
-	system($sudo, 'tar', 'xf', $chroot_tar, '-C', $chroot);
+	sudo($run, $config, '--untar', $chroot_tar, $chroot);
 	plog('NOTIFY', "chroot recreated in $chroot_tar (live in $chroot)");
     }
     
