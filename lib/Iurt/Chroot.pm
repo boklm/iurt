@@ -190,11 +190,8 @@ sub add_local_user {
 	sudo($run, $config, "--mkdir", "$chroot_tmp/home/builder/rpm/$p");
     } 
 
-    dump_rpmmacros($run, $config, "$chroot_tmp/home/builder/.rpmmacros") or return;
-
     if ($uid) {
-	if (system($sudo, 'chroot', $chroot_tmp, 'useradd', '-M', '-u', $uid, $luser) ||
-	    system("$sudo chroot $chroot_tmp id $luser >/dev/null 2>&1")) {
+	if (sudo($run, $config, "--useradd", $chroot_tmp, $luser, $uid) || system("$sudo chroot $chroot_tmp id $luser >/dev/null 2>&1")) {
 	    plog('ERR', "ERROR: setting userid $uid to $luser in " .
 		"$chroot_tmp failed, checking the chroot");
 	    check_build_chroot($run->{chroot_path}, $run->{chroot_tar}, $run,
@@ -205,14 +202,7 @@ sub add_local_user {
 	system($sudo, 'chroot', $chroot_tmp, 'usermod', '-d', "/home/$luser", '-u', $uid, '-o', '-l', $luser, 'root');
     }
 
-    if (system(qq($sudo chroot $chroot_tmp cp -R /home/builder /home/$luser))) {
-	plog("ERROR: could not initialized $luser directory");
-	return;
-    }
-
-    if (system(qq($sudo chroot $chroot_tmp chown -R $uid /home/$luser))) {
-	die "ERROR $program_name: could not initialized $luser directory\n"; 
-    }
+    dump_rpmmacros($run, $config, "$chroot_tmp/home/$luser/.rpmmacros") or return;
 
     1;
 }
