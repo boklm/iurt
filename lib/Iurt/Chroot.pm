@@ -44,13 +44,13 @@ sub clean_chroot {
 
     plog('DEBUG', "clean chroot");
     if (-d $chroot && !$o_only_tar) {
-	system("$sudo umount $chroot/proc &> /dev/null");
-	system("$sudo umount $chroot/dev/pts &> /dev/null");
+        sudo($run, $config, "--umount", "$chroot/proc");
+        sudo($run, $config, "--umount", "$chroot/dev/pts");
 	if ($run->{icecream}) {
-	    system("$sudo umount $chroot/var/cache/icecream &> /dev/null");
+            sudo($run, $config, "--umount", "$chroot/var/cache/icecream");
 	}
 	if (-d "$chroot/urpmi_medias/") {
-	    system("$sudo umount $chroot/urpmi_medias");
+            sudo($run, $config, "--umount", "$chroot/urpmi_medias");
 	}
 
 	# Do not run rm if there is something still mounted there
