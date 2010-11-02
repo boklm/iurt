@@ -149,8 +149,9 @@ sub dump_rpmmacros {
 
     #plog("adding rpmmacros to $file");
 
-    if (!open $f, qq(| $sudo sh -c "cat > $file")) {
-	plog("ERROR: could not open $file ($!)");
+    my $tmpfile = "/tmp/rpmmacros";
+    if (!open $f, ">$tmpfile") {
+	plog("ERROR: could not open $tmpfile ($!)");
 	return 0;
     }
     my $packager = $run->{packager} || $config->{packager};
@@ -160,7 +161,16 @@ sub dump_rpmmacros {
 \%distribution           $config->{distribution}
 \%vendor                 $config->{vendor}
 \%packager               $packager);
-    # need to be root for permission
+
+    my $ret = sudo($run, $config, '--cp', $tmpfile, $file);
+    unlink $tmpfile;
+
+    if (!$ret) {
+	plog("ERROR: could not write $file ($!)");
+	return 0;
+    }
+
+    1;
 }
 
 sub add_local_user {
