@@ -182,14 +182,6 @@ sub add_local_user {
     #       uid of files
     # if (system(qq|sudo chroot $chroot_tmp usermod -u $run->{uid} builder|)) {
     
-    # this should not be necessary as the builder user is supposed to have
-    # the macros already
-
-    foreach my $p ('RPMS', 'BUILD', 'SPECS', 'SRPMS', 'SOURCES') {
-	-d "$chroot_tmp/home/builder/rpm/$p" and next;
-	sudo($run, $config, "--mkdir", "$chroot_tmp/home/builder/rpm/$p");
-    } 
-
     if ($uid) {
 	if (sudo($run, $config, "--useradd", $chroot_tmp, $luser, $uid) || system("$sudo chroot $chroot_tmp id $luser >/dev/null 2>&1")) {
 	    plog('ERR', "ERROR: setting userid $uid to $luser in " .
@@ -552,6 +544,9 @@ sub build_chroot {
     system("rpm -qa --root $tmp_chroot --qf '\%{NAME}-\%{VERSION}-\%{RELEASE}.\%{ARCH}.rpm\n' | sort > $tmp_chroot/tmp/qa");
     sudo($run, $config, "--cp", "$tmp_chroot/tmp/qa", "$tmp_chroot/var/log/qa");
     unlink("$tmp_chroot/tmp/qa");
+
+    sudo($run, $config, "--mkdir", "$tmp_chroot/etc/skel/rpm/$_")
+      foreach "", qw(RPMS BUILD SPECS SRPMS SOURCES tmp);
 
     #
     # CM: Choose a sub-500 uid to prevent collison with $luser
