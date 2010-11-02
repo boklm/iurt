@@ -183,7 +183,7 @@ sub add_local_user {
     # if (system(qq|sudo chroot $chroot_tmp usermod -u $run->{uid} builder|)) {
     
     if ($uid) {
-	if (sudo($run, $config, "--useradd", $chroot_tmp, $luser, $uid) || system("$sudo chroot $chroot_tmp id $luser >/dev/null 2>&1")) {
+	if (!sudo($run, $config, "--useradd", $chroot_tmp, $luser, $uid)) {
 	    plog('ERR', "ERROR: setting userid $uid to $luser in " .
 		"$chroot_tmp failed, checking the chroot");
 	    check_build_chroot($run->{chroot_path}, $run->{chroot_tar}, $run,

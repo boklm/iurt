@@ -382,5 +382,6 @@ sub umount {
 sub useradd {
     my ($_run, $dir, $username, $o_uid) = @_;
     check_path_authorized($dir) or return;
-    return !system('chroot', $dir, 'useradd', if_($o_uid, '-o', '--uid', $o_uid), $username);
+    return system('chroot', $dir, 'useradd', if_($o_uid, '-o', '--uid', $o_uid), $username) == 0
+      || system('chroot', $dir, 'id', $username) == 0;
 }
