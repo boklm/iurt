@@ -35,6 +35,7 @@ my (@params, %run);
 $run{program_name} = $program_name;
 
 my %authorized_modules = ('unionfs' => 1);
+my %authorized_rw_bindmounts = ( map { $_ => 1 } qw(/proc /dev/pts /var/cache/icecream) );
 my $sudo = '/usr/bin/sudo';
 
 $run{todo} = [];
@@ -135,6 +136,9 @@ $run{todo} = [];
     ], "<file> <directory> [files]", 
     "Uncompress tarball", 
     \&untar, "Uncompress tarball" ],
+    [ "", "bindmount", 2, "<source> <dest>", 
+    "bind mount source on dest", 
+    \&bindmount, "Bind mounting" ],
     [ "", "umount", 1, "<directory>]", 
     "umount the given directory", 
     \&umount, "Unmounting" ],
@@ -357,6 +361,16 @@ sub untar {
     }
     mkdir_p($dir);
     return !system('tar', 'xf', $file, '-C', $dir, @o_files);
+}
+
+sub bindmount {
+    my ($_run, $source, $dest) = @_;
+    check_path_authorized($dest) or return;
+    system("mount", "--bind", $source, $dest) == 0 or return;
+    if (!$authorized_rw_bindmounts{$source}) {
+        system("mount", "-o", "remount,ro", $dest) == 0 or return;
+    }
+    return 1;
 }
 
 sub umount {
