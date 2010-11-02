@@ -91,17 +91,17 @@ sub clean_chroot {
 	plog('ERROR', "Failed to dump macros");
 	return;
     }
-    if (system("$sudo mount none -t proc $chroot/proc")) {
+    if (!sudo($run, $config, '--bindmount', "/proc", "$chroot/proc")) {
 	plog('ERROR', "Failed to mount proc");
 	return;
     }
-    if (system("$sudo mount none -t devpts $chroot/dev/pts")) {
+    if (!sudo($run, $config, '--bindmount', "/dev/pts", "$chroot/dev/pts")) {
 	plog('ERROR', "Failed to mount dev/pts");
 	return;
     }
     if ($run->{icecream}) {
 	system("$sudo mkdir -p $chroot/var/cache/icecream");
-	if (system("$sudo mount -o bind /var/cache/icecream $chroot/var/cache/icecream")) {
+	if (!sudo($run, $config, '--bindmount', "/var/cache/icecream", "$chroot/var/cache/icecream")) {
 	    plog('ERROR', "Failed to mount var/cache/icecream");
 	    return;
 	}
@@ -113,8 +113,8 @@ sub clean_chroot {
 	    my $mount_point = "$chroot/urpmi_medias";
 	    my $url = $rep;
 	    $url =~ s!^file://!!;
-	    system("$sudo mkdir -p $mount_point");
-	    if (system("$sudo mount -o bind,ro $url $mount_point")) {
+	    sudo($run, $config, '--mkdir', '-p', $mount_point);
+	    if (!sudo($run, $config, '--bindmount', $url, $mount_point)) {
 		plog('ERROR', "Failed to mount $url on $mount_point");
 		return;
 	    }
