@@ -50,7 +50,7 @@ $run{todo} = [];
     "$program_name is a perl script to execute commands which need root privilege, it helps probram which needs occasional root privileges for some commands.", 
     sub { $arg or usage($program_name, \@params) }, "Running $program_name" ],
     [ "", "cp", [
-   ["", "cp", -1, "[-r] <file1> <file2> ... <filen> <dest>]", "copy the files to dest",
+   ["", "cp", -1, "[-r] <file1> <file2> ... <filen> <dest>", "copy the files to dest",
         sub {    
             my ($tmp, @arg) = @_; 
             $tmp->[0] ||= {}; 
@@ -78,7 +78,7 @@ $run{todo} = [];
     "Link files", 
     \&ln, "Linking files" ],
     [ "", "mkdir", [
-    ["", "mkdir", -1, "[--parents] <dir1> <dir2> ... <dirn>]", "mkdir create the given path",
+    ["", "mkdir", -1, "[--parents] <dir1> <dir2> ... <dirn>", "mkdir create the given path",
         sub {    
             my ($tmp, @arg) = @_; 
             $tmp->[0] ||= {}; 
@@ -88,7 +88,7 @@ $run{todo} = [];
         ["p", "parents", 0, "",  
         "Also create needed parents directories",  
         sub { my ($tmp) = @_; $tmp->[0]{parents} = 1; 1 }, "Set the parents flag"], 
-    ], "[--parents] <dir1> <dir2> ... <dirn>]", 
+    ], "[--parents] <dir1> <dir2> ... <dirn>", 
     "mkdir create the given path", 
     \&mkdir, "Creating the path" ],
     [ "", "rm", [
@@ -105,13 +105,13 @@ $run{todo} = [];
     ], "[-r] <file1> <file2> ... <filen>", 
     "Remove files", 
     \&rm, "Removing files" ],
-    [ "", "initdb", 1 , "<chroot>]", 
+    [ "", "initdb", 1 , "<chroot>", 
     "perform a rpm --initdb in the chroot.", 
     \&initdb, "Initializing the rpm database" ],
     [ "v", "verbose", 1, "<verbose level>", 
     "modprobe try to modprobe the given module if authorized.", 
     sub { $run{verbose} = $_[0]; 1 }, "Setting verbose level" ],
-    [ "", "modprobe", 1, "<module>]", 
+    [ "", "modprobe", 1, "<module>", 
     "modprobe try to modprobe the given module if authorized.", 
     \&modprobe, "Modprobing" ],
    [ "", "tar", [
@@ -139,7 +139,7 @@ $run{todo} = [];
     [ "", "bindmount", 2, "<source> <dest>", 
     "bind mount source on dest", 
     \&bindmount, "Bind mounting" ],
-    [ "", "umount", 1, "<directory>]", 
+    [ "", "umount", 1, "<directory>", 
     "umount the given directory", 
     \&umount, "Unmounting" ],
     [ "", "useradd", 3, "<directory> <username> [uid]", 
