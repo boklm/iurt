@@ -145,6 +145,16 @@ $run{todo} = [];
     [ "", "useradd", 3, "<directory> <username> [uid]", 
     "Add user in given chroot", 
     \&useradd, "Useradd" ],
+   [ "", "urpmi", [
+   ["", "urpmi", -1, "urpmi options", "run urpmi with urpmi options (should have chroot options)",
+        sub {    
+            my ($tmp, @arg) = @_; 
+            push @$tmp, @arg; 
+            1;
+        }, "Setting urpmi options"], 
+    ], "urpmi options", 
+    "Run urpmi in chroot", 
+    \&urpmi, "Run urpmi in chroot" ],
 );
 
 open(my $LOG, ">&STDERR");
@@ -153,8 +163,17 @@ $run{LOG} = sub { print $LOG @_ };
 plog_init($program_name, $LOG, $run{verbose});
 #plog_init($program_name, $LOG, 7, 1);
 
-my $todo = parseCommandLine($program_name, \@ARGV, \@params);
-@ARGV and usage($program_name, \@params, "@ARGV, too many arguments");
+my $todo;
+
+# (blino) do not use mkcd to parse urpmi command line
+# I fail to make it no parse arguments after -- on command line
+if ($ARGV[0] eq '--urpmi') {
+    my (undef, @options) = @ARGV;
+    $todo = [ [ \&urpmi, \@options, "urpmi" ] ];
+} else {
+    $todo = parseCommandLine($program_name, \@ARGV, \@params);
+    @ARGV and usage($program_name, \@params, "@ARGV, too many arguments");
+}
 
 my $ok = 1;
 foreach my $t (@$todo)  {
@@ -384,4 +403,37 @@ sub useradd {
     check_path_authorized($dir) or return;
     return system('chroot', $dir, 'useradd', if_($o_uid, '-o', '--uid', $o_uid), $username) == 0
       || system('chroot', $dir, 'id', $username) == 0;
+}
+
+sub urpmi {
+    my ($_run, @options) = @_;
+
+    # get all --something options
+    my %optvals;
+    my $current_opt;
+    foreach (@options) {
+        if (/^--/) {
+            $current_opt = $_;
+        } else {
+            if ($current_opt) {
+                $optvals{$current_opt} = $_;
+            }
+            undef $current_opt;
+        }
+    }
+
+    # check that urpmi is rooted and using allowed chroot paths
+    my $is_rooted = 0;
+    foreach (qw(--root --urpmi-root)) {
+        if ($optvals{$_}) {
+            check_path_authorized($optvals{$_}) or return;
+            $is_rooted = 1;
+        }
+    }
+    if (!$is_rooted) {
+	plog('FAIL', "urpmi: must be rooted");
+	return;	
+    }
+
+    return !system('urpmi', @options);
 }
