@@ -18,6 +18,8 @@ our @EXPORT = qw(
     sudo
 );
 
+my $sudo = '/usr/bin/sudo';
+
 =head2 config_usage($program_name, $run)
 
 Check that there is no other program running and create a pidfile lock
@@ -302,7 +304,7 @@ sub perform_command {
 
 sub clean_process {
     my ($run, $match, $verbose) = @_;
-    return clean($run, $match, "pgrep -u root -f", "sudo pkill -9 -u root -f", $verbose);
+    return clean($run, $match, "pgrep -u root -f", "$sudo pkill -9 -u root -f", $verbose);
 }
 
 sub clean {
@@ -352,7 +354,7 @@ sub sudo {
     -x $config->{iurt_root_command}
 	or die "FATAL: $config->{iurt_root_command} command not found";
 
-    !system('/usr/bin/sudo', $config->{iurt_root_command}, @arg);
+    !system($sudo, $config->{iurt_root_command}, @arg);
 }
 
 1
