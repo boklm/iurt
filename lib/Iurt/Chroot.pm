@@ -533,7 +533,7 @@ sub build_chroot {
 
     # Yes, /usr/lib/rpm/rpmb even for x86_64
     if (! -f "$tmp_chroot/bin/rpm") {
-	plog('ERROR', "Base packages missing in genenrated chroot.");
+	plog('ERROR', "Base packages missing in generated chroot.");
 	return 0;
     }
 
