@@ -157,6 +157,10 @@ $run{todo} = [];
     \&urpmi, "Run urpmi in chroot" ],
 );
 
+my %commands_with_more_args = (
+    "--urpmi" => [ \&urpmi, "urpmi" ],
+);
+
 open(my $LOG, ">&STDERR");
 $run{LOG} = sub { print $LOG @_ };
 
@@ -165,11 +169,11 @@ plog_init($program_name, $LOG, $run{verbose});
 
 my $todo;
 
-# (blino) do not use mkcd to parse urpmi command line
-# I fail to make it no parse arguments after -- on command line
-if ($ARGV[0] eq '--urpmi') {
+# (blino) do not use mkcd to parse complicated command lines with unhandled options
+# I fail to make mkcd not parse arguments after -- on command line
+if (my $command = $commands_with_more_args{$ARGV[0]}) {
     my (undef, @options) = @ARGV;
-    $todo = [ [ \&urpmi, \@options, "urpmi" ] ];
+    $todo = [ [ $command->[0], \@options, $command->[1] ] ];
 } else {
     $todo = parseCommandLine($program_name, \@ARGV, \@params);
     @ARGV and usage($program_name, \@params, "@ARGV, too many arguments");
