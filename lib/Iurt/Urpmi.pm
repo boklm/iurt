@@ -417,7 +417,7 @@ sub install_packages_old {
 sub are_installed {
     my ($chroot, @pkgs) = @_;
     @pkgs = map { -f "$chroot$_" && `rpm -qp --qf %{name} $chroot$_` || $_ } @pkgs;
-    system("sudo chroot $chroot rpm -q @pkgs") == 0;
+    system("rpm -q --root $chroot @pkgs") == 0;
 }
 
 sub install_packages {
