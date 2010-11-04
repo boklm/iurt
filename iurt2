@@ -954,8 +954,9 @@ retry:
 	    $icecream = "RPM_BUILD_NCPUS=$run{icecream}";
 	}
 
-	if (!perform_command(qq($sudo chroot $chroot_tmp /bin/su - $luser -c "TMP=/home/$luser/tmp/ $icecream $command"), 
+	if (!perform_command(qq(chroot $chroot_tmp /bin/su - $luser -c "TMP=/home/$luser/tmp/ $icecream $command"), 
 		\%run, $config, $cache, 
+		use_iurt_root_command => 1,
 		mail => $maintainer, 
 		error => "[REBUILD] $srpm from $run{distro_tag} does not build correctly on $run{my_arch}", 
 		logname => "build", 
