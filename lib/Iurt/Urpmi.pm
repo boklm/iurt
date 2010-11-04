@@ -53,10 +53,12 @@ sub set_command {
 }
 sub set_command__urpmi_root {
     my ($self, $chroot_tmp) = @_;
+    $self->{use_iurt_root_command} = 1;
     $self->{urpmi_command} = "urpmi $self->{urpmi_options} --urpmi-root $chroot_tmp";
 }
 sub set_command__use_distrib {
     my ($self, $chroot_tmp) = @_;
+    $self->{use_iurt_root_command} = 1;
     $self->{urpmi_command} = "urpmi $self->{urpmi_options} --use-distrib $self->{distrib_url} --root $chroot_tmp";
 }
 sub set_command__chrooted {
@@ -232,8 +234,9 @@ sub add_packages {
     my $run = $self->{run};
     my $config = $self->{config};
     my $cache = $run->{cache};
-    if (!perform_command("sudo $self->{urpmi_command} @packages", 
+    if (!perform_command("$self->{urpmi_command} @packages", 
 		$run, $config, $cache, 
+		use_iurt_root_command => $self->{use_iurt_root_command},
 		timeout => 300, 
 		freq => 1,
 		retry => 2,
@@ -389,9 +392,10 @@ sub install_packages_old {
     my $cache = $run->{cache};
     my $log_spool = "$local_spool/log/$srpm/";
     -d $log_spool or mkdir $log_spool;
-    if (!perform_command("sudo $self->{urpmi_command} @packages", 
+    if (!perform_command("$self->{urpmi_command} @packages", 
 		$run, $config, $cache, 
 		#	mail => $maintainer, 
+		use_iurt_root_command => $self->{use_iurt_root_command},
 		error => $error, 
 		hash => "${log}_$srpm", 
 		srpm => $srpm,
@@ -454,8 +458,9 @@ sub install_packages {
     plog('INFO', "install dependencies using urpmi");
 
     if (!perform_command(
-	    "sudo $self->{urpmi_command} @to_install", 
+	    "$self->{urpmi_command} @to_install", 
 	    $run, $config, $cache,
+	    use_iurt_root_command => $self->{use_iurt_root_command},
 	    error => $error,
 	    logname => ${log},
 	    hash => "${log}_$title", 
