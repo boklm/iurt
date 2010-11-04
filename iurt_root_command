@@ -405,13 +405,13 @@ sub useradd {
       || system('chroot', $dir, 'id', $username) == 0;
 }
 
-sub urpmi {
-    my ($_run, @options) = @_;
+sub check_urpmi_chroot_options {
+    my ($options) = @_;
 
     # get all --something options
     my %optvals;
     my $current_opt;
-    foreach (@options) {
+    foreach (@$options) {
         if (/^--/) {
             $current_opt = $_;
         } else {
@@ -431,9 +431,14 @@ sub urpmi {
         }
     }
     if (!$is_rooted) {
-	plog('FAIL', "urpmi: must be rooted");
+	plog('FAIL', "urpmi commands must be rooted");
 	return;	
     }
 
-    return !system('urpmi', @options);
+    return 1;
+}
+
+sub urpmi {
+    my ($_run, @options) = @_;
+    return check_urpmi_chroot_options(\@options) && !system('urpmi', @options);
 }
