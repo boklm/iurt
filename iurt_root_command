@@ -159,6 +159,7 @@ $run{todo} = [];
 
 my %commands_with_more_args = (
     "--urpmi" => [ \&urpmi, "urpmi" ],
+    "--chroot" => [ \&run_chroot, "chroot" ],
 );
 
 open(my $LOG, ">&STDERR");
@@ -445,4 +446,15 @@ sub check_urpmi_chroot_options {
 sub urpmi {
     my ($_run, @options) = @_;
     return check_urpmi_chroot_options(\@options) && !system('urpmi', @options);
+}
+
+sub run_chroot {
+    my ($_run, $dir, @options) = @_;
+    if (!$dir) {
+	plog('FAIL', "chroot: need directory argument");
+	return;	
+    }
+    check_path_authorized($dir) or return;
+
+    return !system("chroot", $dir, @options);
 }
