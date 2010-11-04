@@ -110,7 +110,7 @@ sub perform_command {
 
     if ($opt{use_iurt_root_command}) {
         my ($binary, $args) = $command =~ /^(\S*)(.*)$/;
-        $command = "$sudo $config->{iurt_root_command} --$binary $args";
+        $command = "$sudo $config->{iurt_root_command} --$binary$args";
     }
 
     my ($output, $fulloutput, $comment);
