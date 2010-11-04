@@ -108,6 +108,11 @@ sub perform_command {
 
     plog('DEBUG', "Using timeout of $opt{timeout} seconds.");
 
+    if ($opt{use_iurt_root_command}) {
+        my ($binary, $args) = $command =~ /^(\S*)(.*)$/;
+        $command = "$sudo $config->{iurt_root_command} --$binary $args";
+    }
+
     my ($output, $fulloutput, $comment);
     my ($kill, $pipe);
 
