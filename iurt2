@@ -931,7 +931,7 @@ retry:
 	# try to workarround the rpm -qa db4 error(2) from dbcursor->c_get:
 	# No such file or directory
 	# system("sudo chroot $chroot_tmp rm -rf /var/lib/rpm/__db* &> /dev/null");
-	system("$sudo chroot $chroot_tmp rpm --rebuilddb &> /dev/null");
+	# system("$sudo chroot $chroot_tmp rpm --rebuilddb &> /dev/null");
 
 	perform_command("$sudo chroot $chroot_tmp rpm -qa | sort", 
 	    \%run, $config, $cache, 
