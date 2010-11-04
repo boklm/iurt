@@ -933,7 +933,7 @@ retry:
 	# system("sudo chroot $chroot_tmp rm -rf /var/lib/rpm/__db* &> /dev/null");
 	# system("$sudo chroot $chroot_tmp rpm --rebuilddb &> /dev/null");
 
-	perform_command("$sudo chroot $chroot_tmp rpm -qa | sort", 
+	perform_command("rpm --root $chroot_tmp -qa | sort", 
 	    \%run, $config, $cache, 
 	    logname => "rpm_qa", 
 	    hash => "rpm_qa_$srpm", 
