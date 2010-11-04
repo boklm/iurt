@@ -197,10 +197,11 @@ sub add_media__urpmi_root {
 
     plog("adding distrib $self->{distrib_url} with option --urpmi-root in chroot $chroot");
 
-    perform_command("sudo urpmi.addmedia -v --urpmi-root $chroot --distrib $self->{distrib_url} --probe-synthesis", 
+    perform_command("urpmi-addmedia -v --urpmi-root $chroot --distrib $self->{distrib_url} --probe-synthesis", 
 		$run, $config, $cache, 
 		mail => $config->{admin},
 		timeout => 300, 
+		use_iurt_root_command => 1,
 		freq => 1,
 		retry => 2,
 		debug_mail => $run->{debug});

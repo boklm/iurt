@@ -159,6 +159,7 @@ $run{todo} = [];
 
 my %commands_with_more_args = (
     "--urpmi" => [ \&urpmi, "urpmi" ],
+    "--urpmi-addmedia" => [ \&urpmi_addmedia, "urpmi.addmedia" ],
     "--chroot" => [ \&run_chroot, "chroot" ],
 );
 
@@ -446,6 +447,11 @@ sub check_urpmi_chroot_options {
 sub urpmi {
     my ($_run, @options) = @_;
     return check_urpmi_chroot_options(\@options) && !system('urpmi', @options);
+}
+
+sub urpmi_addmedia {
+	my ($_run, @options) = @_;
+	return check_urpmi_chroot_options(\@options) && !system('urpmi.addmedia', @options);
 }
 
 sub run_chroot {
