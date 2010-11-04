@@ -619,6 +619,7 @@ sub recreate_srpm {
 
     my %opt = (mail => $config->{admin}, 
 	error => "[REBUILD] cannot install $srpm in $chroot_tmp", 
+ 	use_iurt_root_command => 1,
 	debug_mail => $run->{debug},
 	hash => "install_$srpm",
 	retry => $b_retry,
@@ -636,7 +637,7 @@ sub recreate_srpm {
 	    1;
 	});
     plog('DEBUG', "recreating src.rpm...");
-    if (!perform_command(qq(sudo chroot $chroot_tmp su $luser -c "rpm -i /home/$luser/rpm/SRPMS/$srpm"), 
+    if (!perform_command(qq(chroot $chroot_tmp su $luser -c "rpm -i /home/$luser/rpm/SRPMS/$srpm"), 
 	    $run, $config, $cache, %opt)) {
 	plog("ERROR: chrooting failed (retry $opt{retry}") if $run->{debug};
 	if ($opt{retry}) {
@@ -661,8 +662,9 @@ sub recreate_srpm {
     } 
     # 20060515 This should not be necessairy any more if urpmi *.spec works, but it doesn't
     #
-    my $ret = perform_command(qq(sudo chroot $chroot_tmp su $luser -c "rpmbuild --nodeps -bs $with_flags /home/$luser/rpm/SPECS/$spec"), 
+    my $ret = perform_command(qq(chroot $chroot_tmp su $luser -c "rpmbuild --nodeps -bs $with_flags /home/$luser/rpm/SPECS/$spec"), 
 	$run, $config, $cache, 
+	use_iurt_root_command => 1,
 	mail => $config->{admin}, 
 	error => "[REBUILD] cannot create $srpm in $chroot_tmp", 
 	debug_mail => $run->{debug},
