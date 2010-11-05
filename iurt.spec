@@ -1,8 +1,8 @@
-############################################
+#############################################
 # Warning
 #   This package must be handled 
 #   via /svn/soft/build_system/iurt/trunk/
-############################################
+#############################################
 
 %define name iurt
 %define release %mkrel 1
