@@ -29,7 +29,7 @@
 
 use strict;
 use MDK::Common;
-use Iurt::Config qw(config_usage get_date config_init dump_cache init_cache get_author_email);
+use Iurt::Config qw(config_usage config_init get_author_email);
 use Iurt::Process qw(check_pid);
 use Iurt::Mail qw(sendmail);
 use Iurt::File qw(check_upload_tree);
@@ -109,11 +109,8 @@ $run{pidfile_home} = $config->{tmp};
 $run{pidfile} = "upload";
 my $pidfile = check_pid(\%run);
 
-#my $cache = init_cache(\%run, $config, { arch => {} });
 my $cache =  { arch => {} };
 
-my ($_fulldate, $daydate) = get_date();
-$run{daydate} = $daydate;
 
 my $todo = "$config->{queue}/todo/";
 my $done = "$config->{queue}/done/";
@@ -284,6 +281,5 @@ foreach my $prefix (keys %pkg_tree) {
     }
 }
 
-#dump_cache(\%run);
 exit();
 
