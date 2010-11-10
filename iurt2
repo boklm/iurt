@@ -388,14 +388,16 @@ my $real_arch = `uname -m`;
 chomp $real_arch;
 my $HOME = $ENV{HOME};
 my $configfile = "$HOME/.iurt.$run{distro_tag}.conf";
+my $sysconfigfile = "/etc/iurt/$run{distro_tag}.conf";
 
-plog('DEBUG', "load config: $configfile");
-my $config;
-if (-f $configfile) {
-    $config = eval(cat_($configfile))
-	or die "FATAL $program_name: syntax error in $configfile";
-} else {
-    $config = {};
+my $config = {};
+foreach my $f ($configfile, $sysconfigfile) {
+    plog('DEBUG', "load config: $f");
+    if (-f $f) {
+        $config = eval(cat_($f))
+          or die "FATAL $program_name: syntax error in $f";
+        last;
+    }
 }
 
 if ($run{repository}) {
