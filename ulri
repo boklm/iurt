@@ -148,7 +148,7 @@ my %config_usage = (
     },
     packager => {
         desc => 'Default packager tag user by bot',
-	default => 'Mandriva Team <http://www.mandrivaexpert.com>'
+	default => 'Mageia Team <http://www.mageia.org>'
     },
 );
 config_usage(\%config_usage, $config) if $run{config_usage};

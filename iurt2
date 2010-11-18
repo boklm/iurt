@@ -76,7 +76,7 @@ $SIG{TERM} = sub {
 };
 
 my $program_name = 'iurt2';
-my $VERSION = '0.6.2';
+my $VERSION = '0.6.4';
 # sessing parameters
 my $sudo = '/usr/bin/sudo';
 my $arg = @ARGV;
@@ -474,7 +474,7 @@ my %config_usage = (
     },
     distribution => {
 	desc => 'Name of the packages distribution',
-	default => 'Mandriva Linux'
+	default => 'Mageia'
     },
     home => {
 	desc => 'Home dir',
@@ -550,7 +550,7 @@ my %config_usage = (
     },
     vendor => {
 	desc => 'Name of the packages vendor',
-	default => 'Mandriva'
+	default => 'Mageia.org'
     },
     additional_media => {
 	desc => 'Additional medias to be used',
