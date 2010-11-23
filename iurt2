@@ -388,7 +388,7 @@ my $real_arch = `uname -m`;
 chomp $real_arch;
 my $HOME = $ENV{HOME};
 my $configfile = "$HOME/.iurt.$run{distro_tag}.conf";
-my $sysconfigfile = "/etc/iurt/$run{distro_tag}.conf";
+my $sysconfigfile = "/etc/iurt/build/$run{distro_tag}.conf";
 
 my $config = {};
 foreach my $f ($configfile, $sysconfigfile) {
