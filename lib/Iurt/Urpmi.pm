@@ -215,12 +215,13 @@ sub add_media {
 
     plog("add chroot media: $run->{chrooted_media}");
 
-    if (!perform_command("sudo chroot $chroot urpmi.addmedia $media", 
+    if (!perform_command("urpmi-addmedia $media", 
 		$run, $config, $cache, 
 		mail => $config->{admin},
 		timeout => 300, 
 		freq => 1,
 		retry => 2,
+		use_iurt_root_command => 1,
 		debug_mail => $run->{debug})) {
 	}
     if (!check_media_added($chroot, $regexp)) { 
