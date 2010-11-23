@@ -46,6 +46,17 @@ $run{LOG} = sub { print $LOG @_ };
 my $HOME = $ENV{HOME};
 
 my $configfile = "$HOME/.upload.conf";
+my $sysconfigfile = "/etc/iurt/upload.conf";
+
+my $config = {};
+foreach my $f ($configfile, $sysconfigfile) {
+    plog('DEBUG', "load config: $f");
+    if (-f $f) {
+        $config = eval(cat_($f))
+          or die "FATAL $program_name: syntax error in $f";
+        last;
+    }
+}
 
 my %config_usage = ( 
     admin => {
@@ -93,14 +104,6 @@ my %config_usage = (
 	default => "-o ConectTimeout=20"
     },
 );
-
-my $config;
-if (-f $configfile) {
-    $config = eval(cat_($configfile))
-	or die "FATAL $program_name: syntax error in $configfile";
-} else {
-    $config = {};
-}
 
 config_usage(\%config_usage, $config) if $run{config_usage};
 config_init(\%config_usage, $config, \%run);
