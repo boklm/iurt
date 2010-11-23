@@ -97,7 +97,7 @@ my %config_usage = (
     },
     queue => {
 	desc => 'root directory of the various upload queues',
-	default => '/home/mandrake/uploads/'
+	default => "$HOME/uploads/"
     },
     ssh_option => {
 	desc => "SSH options",

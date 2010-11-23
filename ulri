@@ -136,7 +136,7 @@ my %config_usage = (
     },
     queue => {
 	desc => "Root of the tree where the packages to compile are located",
-	default => "/home/mandrake/uploads/"
+	default => "$HOME/uploads/"
     },
     cache_home => {
 	desc => 'Where to store the cache files',
