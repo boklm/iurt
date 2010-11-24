@@ -184,7 +184,7 @@ sub urpmi_command {
 
 sub check_media_added {
     my ($chroot, $media) = @_;
-    my $medias = `sudo chroot $chroot urpmq --list-media 2>&1`;
+    my $medias = `urpmq --root $chroot --list-media 2>&1`;
     print "MEDIA $medias ($media)\n";
     $medias =~ /$media/m;
 }
