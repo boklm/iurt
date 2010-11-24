@@ -36,7 +36,6 @@ $run{program_name} = $program_name;
 
 my %authorized_modules = ('unionfs' => 1);
 my %authorized_rw_bindmounts = ( map { $_ => 1 } qw(/proc /dev/pts /var/cache/icecream) );
-my $sudo = '/usr/bin/sudo';
 
 $run{todo} = [];
 @params = ( 
@@ -203,8 +202,8 @@ sub modprobe {
 	    return 1;
 	}
     }
-    system($sudo, "/sbin/depmod", "-a");
-    !system($sudo, "/sbin/modprobe", "-f", $module);
+    system("/sbin/depmod", "-a");
+    !system("/sbin/modprobe", "-f", $module);
 }
 
 sub mkdir {
@@ -248,7 +247,7 @@ sub rm {
 		    plog('FAIL', "removal of $f forbidden");
 		    $ok = 0;
 		} else {
-		    system($sudo, 'rm', '-rf', $f);
+		    system('rm', '-rf', $f);
 		    plog('DEBUG', "removing $f");
 		    $done = 1;
 		}
@@ -301,7 +300,7 @@ sub cp {
 		plog('WARN', "can't copy directories without the -r option");
 		$ok = 0;
 	    } else {
-		system($sudo, 'cp', '-raf', $f);
+		system('cp', '-raf', $f);
 		plog('DEBUG', "copying $f -> $dest");
 		$done = 1;
 	    }
