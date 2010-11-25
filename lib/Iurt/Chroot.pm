@@ -429,12 +429,6 @@ sub create_chroot {
 	if (!-f $chroot_tar) {
 	    plog("rebuild chroot tarball");
 	    $rebuild = 1;
-	    if (!build_chroot($run, $config, $tmp_chroot, $chroot_tar, $opt)) {
-		plog('NOTIFY', "creating chroot failed.");
-		$clean->();
-		sudo($run, $config, '--rm', '-r', $chroot, $chroot_tar);
-		return;
-	    }
 	} else {
 	    link $chroot_tar, $tmp_tar or die "FATAL: could not initialize chroot ($!)\n";
 
@@ -451,14 +445,7 @@ sub create_chroot {
 		if (@removed_pkgs) {
 			plog('DEBUG', "changed packages: @removed_pkgs");
 			plog('NOTIFY', "Rebuilding chroot tarball");
-
 			$rebuild = 1;
-			sudo($run, $config, '--rm', '-r', $tmp_chroot);
-			if (!build_chroot($run, $config, $tmp_chroot, $chroot_tar, $opt)) { 
-			    plog('NOTIFY', "creating chroot failed.");
-			    $clean->();
-			    return;
-			}
 		} else {
 			plog('NOTIFY', "chroot tarball is already up-to-date");
 			link $tmp_tar, $chroot_tar;
@@ -466,14 +453,18 @@ sub create_chroot {
 	    } else {
 		plog('DEBUG', "can't open $tmp_chroot/var/log/qa");
 		plog('ERR', "can't check chroot, recreating");
-
-		if (!build_chroot($run, $config, $tmp_chroot, $chroot_tar, $opt)) {
-		    plog('NOTIFY', "creating chroot failed.");
-		    $clean->();       
-		    return;
-		}
+                $rebuild = 1;
 	    }
 	}
+
+    if ($rebuild) {
+	    if (!build_chroot($run, $config, $tmp_chroot, $chroot_tar, $opt)) {
+		plog('NOTIFY', "creating chroot failed.");
+		$clean->();
+		sudo($run, $config, '--rm', '-r', $chroot, $chroot_tar);
+		return;
+	    }
+    }
 
     if (!-d $chroot || $rebuild) {
 	plog('DEBUG', "recreate chroot $chroot");
