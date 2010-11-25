@@ -425,7 +425,6 @@ sub create_chroot {
     plog('NOTIFY', "creating chroot");
     plog('DEBUG', "... with packages " . join(', ', @{$opt->{packages}}));
 
-    if (!-f $chroot_tar || link $chroot_tar, $tmp_tar) {
 	mkdir_p($tmp_chroot);
 	if (!-f $chroot_tar) {
 	    plog("rebuild chroot tarball");
@@ -437,6 +436,8 @@ sub create_chroot {
 		return;
 	    }
 	} else {
+	    link $chroot_tar, $tmp_tar or die "FATAL: could not initialize chroot ($!)\n";
+
 	    plog('DEBUG', "decompressing /var/log/qa from $chroot_tar in $tmp_chroot");
 	    sudo($run, $config, '--untar', $chroot_tar, $tmp_chroot, "./var/log/qa");
 
@@ -473,9 +474,6 @@ sub create_chroot {
 	    }
 	}
 	link $tmp_tar, $chroot_tar;
-    } else {
-	die "FATAL: could not initialize chroot ($!)\n";
-    }
 
     if (!-d $chroot || $rebuild) {
 	plog('DEBUG', "recreate chroot $chroot");
