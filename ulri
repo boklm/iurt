@@ -678,10 +678,10 @@ foreach my $prefix (sort keys %pkg_tree) {
 		plog('DEBUG', "Will compile only with media $media_to_add");
 		$cmd =~ s!__MEDIA__!$media_to_add!g;
 
-                #- allow x86_64 hosts to build i586 packages
-                if ($arch eq 'i586') {
-                    $cmd = "setarch i586 $cmd";
-                }
+		#- allow x86_64 hosts to build i586 packages
+		if ($arch eq 'i586') {
+		    $cmd = "setarch i586 $cmd";
+		}
 
 		plog('DEBUG', "Build $pkgs");
 		ssh($remote, "\'echo PID=\$\$; exec $cmd $pkgs &>$prefix_dir/log/botcmd.\$(date +%s).\$(hostname -s).log\' > $temp &");
