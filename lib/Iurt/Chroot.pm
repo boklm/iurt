@@ -458,7 +458,9 @@ sub create_chroot {
 			    $clean->();
 			    return;
 			}
-		}
+		} else {
+			plog('NOTIFY', "Chroot tarball is already up-to-date");
+                }
 	    } else {
 		plog('DEBUG', "can't open $tmp_chroot/var/log/qa");
 		plog('ERR', "can't check chroot, recreating");
