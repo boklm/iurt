@@ -425,7 +425,8 @@ sub create_chroot {
     plog('NOTIFY', "creating chroot");
     plog('DEBUG', "... with packages " . join(', ', @{$opt->{packages}}));
 
-    if (mkdir($tmp_chroot) && (!-f $chroot_tar || link $chroot_tar, $tmp_tar)) {
+    if (!-f $chroot_tar || link $chroot_tar, $tmp_tar) {
+	mkdir_p($tmp_chroot);
 	if (!-f $chroot_tar) {
 	    plog("rebuild chroot tarball");
 	    $rebuild = 1;
@@ -452,7 +453,6 @@ sub create_chroot {
 
 			$rebuild = 1;
 			sudo($run, $config, '--rm', '-r', $tmp_chroot);
-			mkdir $tmp_chroot;
 			if (!build_chroot($run, $config, $tmp_chroot, $chroot_tar, $opt)) { 
 			    plog('NOTIFY', "creating chroot failed.");
 			    $clean->();
