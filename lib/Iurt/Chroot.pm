@@ -439,14 +439,15 @@ sub create_chroot {
 	    plog('DEBUG', "decompressing /var/log/qa from $chroot_tar in $tmp_chroot");
 	    sudo($run, $config, '--untar', $chroot_tar, $tmp_chroot, "./var/log/qa");
 
-	    my $qa;
-	    if (open $qa, "$tmp_chroot/var/log/qa") {
-		my $ok;
-		my $f;
-		while (!$ok && ($f = <$qa>)) {
-		    chomp $f;
-		    if (!-f "$config->{basesystem_media_root}/media/$config->{basesystem_media}/$f") {
-			plog('DEBUG', "$f has changed");
+	    my $tmp_urpmi = mktemp("$chroot.tmp.XXXXXX");
+	    my @installed_pkgs = chomp_(cat_("$tmp_chroot/var/log/qa"));
+	    my @available_pkgs = chomp_(`urpmq --urpmi-root $tmp_urpmi --use-distrib $run->{urpmi}{distrib_url} --list -f 2>/dev/null`);
+	    my @removed_pkgs = difference2(\@installed_pkgs, \@available_pkgs);
+	    rm_rf($tmp_urpmi);
+
+	    if (@installed_pkgs) {
+		if (@removed_pkgs) {
+			plog('DEBUG', "changed packages: @removed_pkgs");
 			plog('NOTIFY', "Rebuilding chroot tarball");
 
 			$rebuild = 1;
@@ -457,8 +458,6 @@ sub create_chroot {
 			    $clean->();
 			    return;
 			}
-			$ok = 1;
-		    }
 		}
 	    } else {
 		plog('DEBUG', "can't open $tmp_chroot/var/log/qa");
