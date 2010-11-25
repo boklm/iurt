@@ -668,7 +668,6 @@ foreach my $prefix (sort keys %pkg_tree) {
 		$cmd =~ s!__DIR__!$path/$prefix!g;
 		$cmd =~ s!__TARGET__!$target!g;
 		$cmd =~ s!__PACKAGER__!$user!g;
-		$cmd =~ s!__IURTLOGDIR__!$prefix_dir/log/!g;
 
 		my $media_to_add;
 		if (ref $config->{media}{$target}{$media}) {
@@ -680,7 +679,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 		$cmd =~ s!__MEDIA__!$media_to_add!g;
 
 		plog('DEBUG', "Build $pkgs");
-		ssh($remote, "$cmd $pkgs > $temp &");
+		ssh($remote, "\'echo PID=\$\$; exec $cmd $pkgs &>$prefix_dir/log/botcmd.\$(date +%s).\$(hostname -s).log\' > $temp &");
 
 		# wait 10 seconds or until we have the log file
 		# plus 20 seconds if it timeouts.
