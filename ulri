@@ -131,11 +131,11 @@ my %config_usage = (
     },
     http_queue => {
 	desc => 'Address where log can be consulted',
-	default => 'http://kenobi.mandriva.com/queue/'
+	default => 'http://kenobi.mandriva.com/queue '
     },
     queue => {
 	desc => "Root of the tree where the packages to compile are located",
-	default => "$HOME/uploads/"
+	default => "$HOME/uploads "
     },
     cache_home => {
 	desc => 'Where to store the cache files',
@@ -143,7 +143,7 @@ my %config_usage = (
     },
     tmp => {
        desc => "Temporary directory",
-       default => "$HOME/tmp/"
+       default => "$HOME/tmp"
     },
     ssh_options => {
 	desc => "SSH options",
