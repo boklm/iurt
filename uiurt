@@ -240,9 +240,6 @@ $run{todo} = [];
     [ "", "no-rsync", 0, "", 
     "Do not send build log to the distant rsync server", 
     sub { $run{no_rsync} = 1 }, "Setting the no rsync warn flag" ],
-    [ "", "use-system-distrib", 1, "<media>", 
-    "Use the current system urpmi configuration", 
-    sub { $run{use_system_distrib} = shift; 1 }, "Setting system distrib for urpmi configuration" ],
     [ "v", "verbose", 1, "<verbose level>", 
     "Give more info messages about what is going on (level from 1 to 10)", 
     sub { $run{verbose} = $_[0]; 1 }, "Setting verbose level" ],
@@ -353,17 +350,6 @@ my %config_usage = (
 	    'main' => [ '' ],
 	    'contrib' => [ '' ]
 	}
-    },
-    basesystem_media_root => {
-	desc => 'Name of the media holding basesystem packages',
-	default => sub {
-	    my ($config, $run) = @_;
-	    "$config->{repository}/$run->{distro}/$run->{my_arch}/";
-	}
-    },
-    basesystem_media => {
-	desc => 'Where to find basesystem packages',
-	default => 'main/release'
     },
     basesystem_packages => {
 	desc => 'List of packages needed for the chroot creation',

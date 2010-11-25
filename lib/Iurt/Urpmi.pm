@@ -21,9 +21,7 @@ sub new {
     my $config = $self->{config};
     my $run = $self->{run};
 
-    if ($run->{use_system_distrib}) {
-	$config->{basesystem_media_root} ||= $run->{use_system_distrib};
-    } elsif ($run->{chrooted_urpmi}) {
+    if ($run->{chrooted_urpmi}) {
 	#my ($host) = $run->{chrooted_urpmi}{rooted_media} =~ m,(?:file|http|ftp)://([^/]*),;
 	#my ($_name, $_aliases, $_addrtype, $_length, @addrs) = gethostbyname($host);
         #
