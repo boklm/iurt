@@ -135,7 +135,7 @@ my %config_usage = (
     },
     queue => {
 	desc => "Root of the tree where the packages to compile are located",
-	default => "$HOME/uploads "
+	default => "$HOME/uploads"
     },
     cache_home => {
 	desc => 'Where to store the cache files',
