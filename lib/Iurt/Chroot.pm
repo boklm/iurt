@@ -460,7 +460,7 @@ sub create_chroot {
 			    return;
 			}
 		} else {
-			plog('NOTIFY', "Chroot tarball is already up-to-date");
+			plog('NOTIFY', "chroot tarball is already up-to-date");
 			link $tmp_tar, $chroot_tar;
                 }
 	    } else {
