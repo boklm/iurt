@@ -245,6 +245,7 @@ foreach my $prefix (keys %pkg_tree) {
     } else {
 	# should send a mail or something
 	plog('ERR', "upload failed ($!), rejecting files in $reject/$path/");
+	mkdir_p("$reject/$path");
 	foreach my $rpm (@{$pkg_tree{$prefix}{rpms}}) {
 	    link "$done/$path/${prefix}_$rpm", "$reject/$path/${prefix}_$rpm";
 	    plog('ERR', "ERROR: link of $rpm failed ($!)");
