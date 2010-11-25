@@ -81,7 +81,7 @@ my %config_usage = (
     },
     tmp => {
 	desc => "Temporary directory",
-	default => "$HOME/tmp/"
+	default => "$HOME/tmp"
     },
     root => {
 	desc => 'Architecture root dir',
@@ -97,7 +97,7 @@ my %config_usage = (
     },
     queue => {
 	desc => 'root directory of the various upload queues',
-	default => "$HOME/uploads/"
+	default => "$HOME/uploads"
     },
     ssh_option => {
 	desc => "SSH options",
@@ -115,9 +115,9 @@ my $pidfile = check_pid(\%run);
 my $cache =  { arch => {} };
 
 
-my $todo = "$config->{queue}/todo/";
-my $done = "$config->{queue}/done/";
-my $reject = "$config->{queue}/rejected/";
+my $todo = "$config->{queue}/todo";
+my $done = "$config->{queue}/done";
+my $reject = "$config->{queue}/rejected";
 
 my %pkg_tree;
 my %excluded;
