@@ -425,37 +425,37 @@ sub create_chroot {
     plog('NOTIFY', "creating chroot");
     plog('DEBUG', "... with packages " . join(', ', @{$opt->{packages}}));
 
-	mkdir_p($tmp_chroot);
-	if (!-f $chroot_tar) {
-	    plog("rebuild chroot tarball");
-	    $rebuild = 1;
-	} else {
-	    link $chroot_tar, $tmp_tar or die "FATAL: could not initialize chroot ($!)\n";
+    mkdir_p($tmp_chroot);
+    if (!-f $chroot_tar) {
+        plog("rebuild chroot tarball");
+        $rebuild = 1;
+    } else {
+        link $chroot_tar, $tmp_tar or die "FATAL: could not initialize chroot ($!)\n";
 
-	    plog('DEBUG', "decompressing /var/log/qa from $chroot_tar in $tmp_chroot");
-	    sudo($run, $config, '--untar', $chroot_tar, $tmp_chroot, "./var/log/qa");
+        plog('DEBUG', "decompressing /var/log/qa from $chroot_tar in $tmp_chroot");
+        sudo($run, $config, '--untar', $chroot_tar, $tmp_chroot, "./var/log/qa");
 
-	    my $tmp_urpmi = mktemp("$chroot.tmp.XXXXXX");
-	    my @installed_pkgs = chomp_(cat_("$tmp_chroot/var/log/qa"));
-	    my @available_pkgs = chomp_(`urpmq --urpmi-root $tmp_urpmi --use-distrib $run->{urpmi}{distrib_url} --list -f 2>/dev/null`);
-	    my @removed_pkgs = difference2(\@installed_pkgs, \@available_pkgs);
-	    rm_rf($tmp_urpmi);
+        my $tmp_urpmi = mktemp("$chroot.tmp.XXXXXX");
+        my @installed_pkgs = chomp_(cat_("$tmp_chroot/var/log/qa"));
+        my @available_pkgs = chomp_(`urpmq --urpmi-root $tmp_urpmi --use-distrib $run->{urpmi}{distrib_url} --list -f 2>/dev/null`);
+        my @removed_pkgs = difference2(\@installed_pkgs, \@available_pkgs);
+        rm_rf($tmp_urpmi);
 
-	    if (@installed_pkgs) {
-		if (@removed_pkgs) {
-			plog('DEBUG', "changed packages: @removed_pkgs");
-			plog('NOTIFY', "Rebuilding chroot tarball");
-			$rebuild = 1;
-		} else {
-			plog('NOTIFY', "chroot tarball is already up-to-date");
-			link $tmp_tar, $chroot_tar;
-                }
-	    } else {
-		plog('DEBUG', "can't open $tmp_chroot/var/log/qa");
-		plog('ERR', "can't check chroot, recreating");
+        if (@installed_pkgs) {
+            if (@removed_pkgs) {
+                plog('DEBUG', "changed packages: @removed_pkgs");
+                plog('NOTIFY', "Rebuilding chroot tarball");
                 $rebuild = 1;
-	    }
-	}
+            } else {
+                plog('NOTIFY', "chroot tarball is already up-to-date");
+                link $tmp_tar, $chroot_tar;
+            }
+        } else {
+            plog('DEBUG', "can't open $tmp_chroot/var/log/qa");
+            plog('ERR', "can't check chroot, recreating");
+            $rebuild = 1;
+        }
+    }
 
     if ($rebuild) {
 	    if (!build_chroot($run, $config, $tmp_chroot, $chroot_tar, $opt)) {
