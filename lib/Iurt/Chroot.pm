@@ -541,7 +541,7 @@ sub build_chroot {
     sudo($run, $config, "--rm", "$tmp_chroot/etc/urpmi/urpmi.cfg");
     sudo($run, $config, "--rm", "$tmp_chroot/var/lib/urpmi/*");
 
-    system("rpm -qa --root $tmp_chroot --qf '\%{NAME}-\%{VERSION}-\%{RELEASE}.\%{ARCH}.rpm\n' | sort > $tmp_chroot/tmp/qa");
+    system("rpm -qa --root $tmp_chroot --qf '\%{NAME}-\%{VERSION}-\%{RELEASE}.\%{ARCH}\n' | sort > $tmp_chroot/tmp/qa");
     sudo($run, $config, "--cp", "$tmp_chroot/tmp/qa", "$tmp_chroot/var/log/qa");
     unlink("$tmp_chroot/tmp/qa");
 
