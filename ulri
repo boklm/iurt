@@ -184,9 +184,9 @@ if ($df->{per} == 100) {
 my %pkg_tree;
 my $compildone = $cache->{done};
 
-my $todo = "$config->{queue}/todo/";
-my $failure = "$config->{queue}/failure/";
-my $done = "$config->{queue}/done/";
+my $todo = "$config->{queue}/todo";
+my $failure = "$config->{queue}/failure";
+my $done = "$config->{queue}/done";
 
 # Raise this when the noarch package starts to build on any bot
 my %noarch_build;
