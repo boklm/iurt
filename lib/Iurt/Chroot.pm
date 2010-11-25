@@ -461,6 +461,7 @@ sub create_chroot {
 			}
 		} else {
 			plog('NOTIFY', "Chroot tarball is already up-to-date");
+			link $tmp_tar, $chroot_tar;
                 }
 	    } else {
 		plog('DEBUG', "can't open $tmp_chroot/var/log/qa");
@@ -473,7 +474,6 @@ sub create_chroot {
 		}
 	    }
 	}
-	link $tmp_tar, $chroot_tar;
 
     if (!-d $chroot || $rebuild) {
 	plog('DEBUG', "recreate chroot $chroot");
