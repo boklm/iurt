@@ -85,7 +85,6 @@ my %config_usage = (
 			user => 'mandrake' ,
 			command => 'sudo -u mandrake -H /usr/local/bin/iurt2.sh --copy_srpm --group -v 1 --config local_spool /export/home/mandrake/iurt/__DIR__ --no_rsync --chrooted-urpmi http://kenobi/dis/ -r __TARGET__ __ARCH__',
 			packages => '/export/home/mandrake/iurt/',
-			log => '/export/home/mandrake/iurt/', 
 		    } ,
 		},
 	    },
