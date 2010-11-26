@@ -707,7 +707,7 @@ my $union_id = 1;
 $run{unionfs_tmp} = $run{unionfs};	
 
 my ($chroot_name, $chroot_tmp, $chroot, $chroot_tar);
-$chroot_name = "chroot_$run{distro_tag}$debug_tag";
+$chroot_name = "chroot_$run{distro_tag}$debug_tag.$run{my_arch}";
 if (!$run{use_old_chroot}) {
     $chroot_tmp = "$config->{local_home}/chroot_tmp";
 
@@ -731,7 +731,7 @@ if (!$run{use_old_chroot}) {
     $chroot = $run{use_old_chroot};
 }
 $run{chroot_path} = $chroot;
-$chroot_tar = "$config->{local_home}/$chroot_name.$run{my_arch}.tar.gz";
+$chroot_tar = "$config->{local_home}/$chroot_name.tar.gz";
 $run{chroot_tar} = $chroot_tar;
 # 20061222 warly 
 # even in use_old_chroot mode we create the chroot if it does not exist (useful 
