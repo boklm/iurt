@@ -536,7 +536,7 @@ my %config_usage = (
     },
     vendor => {
 	desc => 'Name of the packages vendor',
-	default => 'Mageia.org'
+	default => 'Mageia.Org'
     },
     additional_media => {
 	desc => 'Additional medias to be used',
