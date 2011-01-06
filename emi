@@ -221,8 +221,7 @@ foreach my $prefix (keys %pkg_tree) {
 
     $user ||= $config->{upload_user};
 
-
-    my $command = "/usr/bin/sudo -H -u $config->{upload_user} /usr/bin/perl -I/usr/share/mdv-youri-core/lib -I/usr/share/mdv-youri-submit/lib /usr/share/mdv-youri-submit/bin/youri-submit --verbose --config /etc/youri/submit-queue.conf --define user=$user --define prefix=$prefix --define section=$section $target @packages &> $done/$path/$prefix.youri";
+    my $command = "/usr/bin/perl -I/usr/share/mdv-youri-core/lib -I/usr/share/mdv-youri-submit/lib /usr/share/mdv-youri-submit/bin/youri-submit --verbose --config /etc/youri/submit-queue.conf --define user=$user --define prefix=$prefix --define section=$section $target @packages &> $done/$path/$prefix.youri";
 
     plog('DEBUG', "running $command");
     if (!system($command)) {
