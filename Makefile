@@ -36,8 +36,8 @@ tar:  dir localcopy
 	tar cvf $(PACKAGE).tar $(PACKAGE)-$(VERSION)
 	rm -rf $(PACKAGE)-$(VERSION)
 
-localcopy:                                                                                                                                              
-	tar c --exclude=.svn $(FILES) | tar x -C $(PACKAGE)-$(VERSION)   
+localcopy:
+	tar c --exclude=.svn $(FILES) | tar x -C $(PACKAGE)-$(VERSION)
 
 localrpm: tar $(RPM)
 	cp -f $(NAME).tar $(RPM)/SOURCES
