@@ -356,7 +356,6 @@ my %config_usage = (
 	default => [
 	    'basesystem',
 	    'rpm-build',
-	    'rpm-mandriva-setup-build',
 	    'sudo',
 	    'urpmi',
 	    'curl',

@@ -430,7 +430,6 @@ my %config_usage = (
 	default => [
             ($run{distro} =~ /cooker|2008.1/ ? 'basesystem-minimal' : 'basesystem'),
 	    'rpm-build',
-	    'rpm-mandriva-setup-build',
 	    'sudo',
 	    'urpmi',
 	    'curl',
