@@ -770,7 +770,7 @@ if ($run{shell}) {
     add_sudoers(\%run, $chroot_tmp, $luser);
     if ($run{shell}) {
 	plog('NOTIFY', "dumping to a chrooted shell into $chroot_tmp");
-	exec $sudo, 'chroot', $chroot_tmp, '/bin/su', '-', $luser, '-c', "$config->{prompt} bash";
+	exec $sudo, $config->{iurt_root_command}, '--chroot', $chroot_tmp, '/bin/su', '-', $luser, '-c', "$config->{prompt} bash";
 	die "FATAL $program_name: could not exec chroot to $chroot_tmp ($!)";
     }
 }
@@ -959,7 +959,7 @@ retry:
 		    if ($run{stop}) {
 			plog("dumping to a chrooted shell into $chroot_tmp (pid $$)");
 			# exec does not work because it seems stdin and out are shared between children
-			system($sudo, 'chroot', $chroot_tmp, '/bin/su', '-', $luser, '-c', "$config->{prompt} bash");
+			system($sudo, $config->{iurt_root_command}, '--chroot', $chroot_tmp, '/bin/su', '-', $luser, '-c', "$config->{prompt} bash");
 			exit();
 		    }
 		    plog('DEBUG', "calling callback for $opt->{hash}");
