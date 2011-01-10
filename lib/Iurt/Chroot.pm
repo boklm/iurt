@@ -161,6 +161,7 @@ sub dump_rpmmacros {
 \%distribution           $config->{distribution}
 \%vendor                 $config->{vendor}
 \%packager               $packager);
+    close $f;
 
     my $ret = sudo($run, $config, '--cp', $tmpfile, $file);
     unlink $tmpfile;
