@@ -1440,9 +1440,10 @@ sub search_packages {
 
 sub add_sudoers {
     my ($_run, $chroot, $user) = @_;
+    my $tmpfile = "/tmp/sudoers";
     my $file = "$chroot/etc/sudoers";
     my $f;
-    if (!open $f, qq(| $sudo sh -c "cat > $file")) {
+    if (!open $f, ">$tmpfile") {
 	plog("ERROR: could not open $file ($!)");
 	return 0;
     }
@@ -1451,9 +1452,17 @@ root    ALL=(ALL) ALL
 $user   ALL=(ALL) NOPASSWD:RPM
 );
     close $f;
+
     plog("adding sudo for /bin/rpm, /usr/sbin/urpmi and /usr/sbin/urpme");
-    -f $file or return 0;
-    1;
+    my $ret = sudo($run, $config, '--cp', $tmpfile, $file);
+    unlink $tmpfile;
+
+    if (!$ret) {
+	plog("ERROR: could not write $file ($!)");
+	return 0;
+    }
+
+    return -f $file;
 }
 
 sub dump_status {
