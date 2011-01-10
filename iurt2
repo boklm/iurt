@@ -1439,7 +1439,7 @@ sub search_packages {
 }    
 
 sub add_sudoers {
-    my ($_run, $chroot, $user) = @_;
+    my ($run, $chroot, $user) = @_;
     my $tmpfile = "/tmp/sudoers";
     my $file = "$chroot/etc/sudoers";
     my $f;
