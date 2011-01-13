@@ -462,7 +462,7 @@ sub install_packages {
 	    $run, $config, $cache,
 	    use_iurt_root_command => $self->{use_iurt_root_command},
 	    error => $error,
-	    logname => ${log},
+	    logname => $log,
 	    hash => "${log}_$title", 
 	    timeout => 3600, # [pixel] 10 minutes was not enough, 1 hour should be better
 	    srpm => $title,
