@@ -157,7 +157,7 @@ sub urpmi_command {
 
 	if (-d $local_media) {
 	    mkdir("$chroot_tmp/iurt_media/");
-	    opendir my $dir, $local_media;
+	    opendir(my $dir, $local_media);
 	    my $next;
 	    foreach my $f (readdir $dir) {
 		$f =~ /(\.rpm|^hdlist.cz)$/ or next;
@@ -268,7 +268,7 @@ sub get_local_provides {
     my $program_name = $run->{program_name};
     my $local_media = $self->{local_media};
 
-    opendir my $dir, $local_media;
+    opendir(my $dir, $local_media);
     plog(1, "get local provides ($local_media)");
     require URPM;
     my $urpm = new URPM;

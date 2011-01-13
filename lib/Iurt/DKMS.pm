@@ -67,7 +67,7 @@ sub search_dkms {
 	my $media_ok = $run->{dkms}{media} ? $media =~ /$run->{dkms}{media}/ : 1;
 	my $kmedia_ok = $run->{dkms}{kmedia} ? $media =~ /$run->{dkms}{kmedia}/ : 1;
 	plog("searching in $path");
-	opendir my $rpmdh, $path;
+	opendir(my $rpmdh, $path);
 	foreach my $rpm (readdir $rpmdh) {
 	    if ($rpm =~ /^dkms-(.*)-([^-]+-[^-]+)\.[^.]+\.rpm/) {
 		# we only check for kernel or modules in this media

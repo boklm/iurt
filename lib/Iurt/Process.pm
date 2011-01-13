@@ -44,7 +44,7 @@ sub check_pid {
     if (-f $pidfile)  {
 	my (@stat) = stat $pidfile;
 
-	open my $test_PID, $pidfile;
+	open(my $test_PID, $pidfile);
 	my $pid = <$test_PID>;
 	close $test_PID;
 

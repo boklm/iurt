@@ -287,7 +287,7 @@ sub remove_chroot {
     plog('DEBUG', "... dir $dir all $run->{clean_all} prefix $prefix");
 
     if ($run->{clean_all}) {
-	opendir my $chroot_dir, $dir;
+	opendir(my $chroot_dir, $dir);
 	foreach (readdir $chroot_dir) {
 	    next if !-d "$dir/$_" || /\.{1,2}/;
 	    plog("cleaning old chroot for $_ in $dir");
