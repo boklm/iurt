@@ -511,7 +511,7 @@ sub build_chroot {
     $urpmi->set_command($tmp_chroot);
 
     # 20060826 warly urpmi --root does not work properly
-    $urpmi->install_packages(
+    if (!$urpmi->install_packages(
 	"chroot",
 	$tmp_chroot,
 	$run->{local_spool},
@@ -520,11 +520,8 @@ sub build_chroot {
 	"[ADMIN] creation of initial chroot failed on $run->{my_arch}",
 	{ maintainer => $config->{admin} },
 	@{$opt->{packages}}
-    );
-
-    # Yes, /usr/lib/rpm/rpmb even for x86_64
-    if (! -f "$tmp_chroot/bin/rpm") {
-	plog('ERROR', "Base packages missing in generated chroot.");
+    )) {
+	plog('ERROR', "Failed to install initial packages during chroot creation.");
 	return 0;
     }
 
