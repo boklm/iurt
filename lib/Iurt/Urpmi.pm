@@ -542,7 +542,7 @@ sub install_packages {
 
     # <mrl> URPMI saying ok or not, we check this anyway. So that's why
     # it's outside the else.
-    if (! -f "$chroot_tmp/bin/rpm") {
+    if (! -f "$chroot_tmp/usr/bin/rpmbuild") {
 	plog(1, "ERROR: rpm-build is missing!");
 	$ok = 0;
     }
