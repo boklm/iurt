@@ -476,6 +476,12 @@ foreach my $prefix (keys %pkg_tree) {
 	    link $file, "$fail_dir/${prefix}_$srpm";
 	    delete $pkg_tree{$prefix};
 	    unlink $file;
+	    # If one arch has been generated, we also have a src.rpm in done
+	    $file = "$done_dir/${prefix}_$srpm";
+	    if (-f $file) {
+		plog('DEBUG', "deleting $file");
+		unlink $file;
+	    }
 	}
 	
 	# Notify user if build failed
