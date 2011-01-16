@@ -49,7 +49,7 @@ $run{todo} = [];
     "$program_name is a perl script to execute commands which need root privilege, it helps probram which needs occasional root privileges for some commands.", 
     sub { $arg or usage($program_name, \@params) }, "Running $program_name" ],
     [ "", "cp", [
-   ["", "cp", -1, "[-r] [-u <umask>] <file1> <file2> ... <filen> <dest>", "copy the files to dest",
+   ["", "cp", -1, "[-r] <file1> <file2> ... <filen> <dest>", "copy the files to dest",
         sub {    
             my ($tmp, @arg) = @_; 
             $tmp->[0] ||= {}; 
@@ -59,10 +59,7 @@ $run{todo} = [];
         ["r", "recursive", 0, "",  
         "Also copy directories and subdirectories",  
         sub { my ($tmp) = @_; $tmp->[0]{recursive} = 1; 1 }, "Set the recursive flag"], 
-        [ "u", "umask", 1, "<umask>", 
-        "Set the umask",
-        sub { my ($tmp) = @_; ($tmp->[0]{umask}) = @_; 1 }, "Setting umask" ],
-    ], "[-r] [-u <umask>] <file1> <file2> ... <filen> <dest>", 
+    ], "[-r] <file1> <file2> ... <filen> <dest>", 
     "Copy files", 
     \&cp, "Copying files" ],
    [ "", "ln", [
@@ -297,10 +294,6 @@ sub cp {
 	plog('FAIL', "copying to $dest forbidden");
 	return;
     }	
-
-    my $prev_umask = umask();
-    umask($prev_umask | $opt->{umask}) if $opt->{umask};
-
     foreach my $f (@files) {
 	if (-d $f) {
 	    if (!$opt->{recursive}) {
@@ -333,9 +326,6 @@ sub cp {
 	    }
 	}
     }
-
-    umask($prev_umask) if $opt->{umask};
-
     if (!$done) { plog('DEBUG', "nothing copied") }
     $ok;
 }
