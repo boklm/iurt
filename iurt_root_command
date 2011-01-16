@@ -294,6 +294,10 @@ sub cp {
 	plog('FAIL', "copying to $dest forbidden");
 	return;
     }	
+
+    my $prev_umask = umask();
+    umask($prev_umask | $opt->{umask}) if $opt->{umask};
+
     foreach my $f (@files) {
 	if (-d $f) {
 	    if (!$opt->{recursive}) {
@@ -326,6 +330,9 @@ sub cp {
 	    }
 	}
     }
+
+    umask($prev_umask) if $opt->{umask};
+
     if (!$done) { plog('DEBUG', "nothing copied") }
     $ok;
 }
