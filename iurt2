@@ -1454,7 +1454,7 @@ $user   ALL=(ALL) NOPASSWD:RPM
     close $f;
 
     plog("adding sudo for /bin/rpm, /usr/sbin/urpmi and /usr/sbin/urpme");
-    my $ret = sudo($run, $config, '--cp', $tmpfile, $file);
+    my $ret = sudo($run, $config, '--cp', '--umask', 0337, $tmpfile, $file);
     unlink $tmpfile;
 
     if (!$ret) {
