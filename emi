@@ -167,9 +167,6 @@ sub todo_func {
 check_upload_tree(\%run, $done, \&done_func,);
 check_upload_tree(\%run, $todo, \&todo_func,);
 
-# Once the tree is checked, ulri can be launched again
-unlink $pidfile;
-
 
 #
 # Decide what should be uploaded
@@ -284,5 +281,6 @@ foreach my $prefix (keys %pkg_tree) {
     }
 }
 
+unlink $pidfile;
 exit();
 
