@@ -5,7 +5,7 @@ VERSION := $(shell rpm -q --qf '%{version}\n' --specfile $(NAME).spec | head -1)
 RELEASE := $(shell rpm -q --qf '%{release}\n' --specfile $(NAME).spec | head -1)
 RELTAG := $(shell echo "V$(VERSION)_$(RELEASE)" | tr -- '-.' '__')
 
-FILES= Makefile emi iurt iurt.spec iurt2 iurt_root_command lib ulri 
+FILES= Makefile emi iurt.spec iurt2 iurt_root_command lib ulri 
 RPM=$(HOME)/rpm
 
 VENDORLIB = $(shell eval "`perl -V:installvendorlib`"; echo $$installvendorlib)
