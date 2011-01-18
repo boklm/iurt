@@ -165,7 +165,6 @@ foreach my $k (keys %{$config->{arch_translation}}) {
 
 $run{pidfile_home} = $config->{tmp};
 $run{pidfile} = "upload";
-my $pidfile = check_pid(\%run);
 
 #my $cache = init_cache(\%run, $config, { done => {} });
 my $cache = { done => {} };
@@ -236,7 +235,7 @@ sub todo_func {
 	    $arch =~ s/-.*//;
 	}
 
-	$run{bot}{$arch}{$host}{$bot} = $prefix;
+	$run{bot}{$host}{$bot} = $prefix;
 
 	# this should be in the cache, but waiting for a cache-clean option
 	$compildone->{$prefix}{$arch} = 1;
@@ -294,6 +293,7 @@ check_upload_tree(\%run, $done, \&done_func,);
 
 plog('MSG', "check build bot results");
 
+my $pidfile = check_pid(\%run);
 my %later;
 foreach my $prefix (keys %pkg_tree) {
     my $ent = $pkg_tree{$prefix};
@@ -421,7 +421,7 @@ foreach my $prefix (keys %pkg_tree) {
 	plog('INFO', "delete lock file for $prefix");
 	unlink $lock_file;
 
-	$run{bot}{$arch}{$host}{$bot} = 0;
+	$run{bot}{$host}{$bot} = 0;
 
 	if ($later) {
 	    next bot;
@@ -538,6 +538,7 @@ foreach my $prefix (keys %pkg_tree) {
 
     } # end bot
 } # end prefix
+unlink $pidfile;
 
 
 #
@@ -625,7 +626,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 
 	foreach my $host (keys %{$config->{bot}{$arch}}) {
 	    foreach my $bot (keys %{$config->{bot}{$arch}{$host}}) {
-		next if $run{bot}{$arch}{$host}{$bot};
+		next if $run{bot}{$host}{$bot};
 
 		# Enable noarch lock after the first bot snarfs the package
 		#
@@ -633,7 +634,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 
 		plog('INFO', "building on $host/$arch ($bot)");
 
-		$run{bot}{$arch}{$host}{$bot} = $prefix;
+		$run{bot}{$host}{$bot} = $prefix;
 		$compildone->{$prefix}{$arch} = 1;
 
 		my $bot_conf = $config->{bot}{$arch}{$host}{$bot};
@@ -749,7 +750,6 @@ plog('INFO', "jobs in queue:", %to_compile ?
 
 
 #dump_cache(\%run);
-unlink $pidfile;
 exit();
 
 
