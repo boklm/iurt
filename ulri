@@ -165,6 +165,7 @@ foreach my $k (keys %{$config->{arch_translation}}) {
 
 $run{pidfile_home} = $config->{tmp};
 $run{pidfile} = "upload";
+my $pidfile = check_pid(\%run);
 
 #my $cache = init_cache(\%run, $config, { done => {} });
 my $cache = { done => {} };
@@ -293,7 +294,6 @@ check_upload_tree(\%run, $done, \&done_func,);
 
 plog('MSG', "check build bot results");
 
-my $pidfile = check_pid(\%run);
 my %later;
 foreach my $prefix (keys %pkg_tree) {
     my $ent = $pkg_tree{$prefix};
@@ -538,7 +538,6 @@ foreach my $prefix (keys %pkg_tree) {
 
     } # end bot
 } # end prefix
-unlink $pidfile;
 
 
 #
@@ -749,6 +748,7 @@ plog('INFO', "jobs in queue:", %to_compile ?
     map { sprintf("%s(%d)", $_, $to_compile{$_}) } keys %to_compile : "none");
 
 
+unlink $pidfile;
 #dump_cache(\%run);
 exit();
 
