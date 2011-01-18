@@ -69,7 +69,7 @@ sub check_pid {
 		    sleep 1;
 		}
 	    } else  {
-		plog("another instance [$pid] is already running for ",
+		plog('WARN', "another instance [$pid] is already running for ",
 				time()-$time, " seconds");
 		exit();
 	    }
