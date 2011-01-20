@@ -33,16 +33,16 @@ dir:
 	mkdir $(PACKAGE)-$(VERSION)
 
 tar:  dir localcopy
-	tar cvf $(PACKAGE).tar $(PACKAGE)-$(VERSION)
+	tar cvf $(PACKAGE)-$(VERSION).tar $(PACKAGE)-$(VERSION)
 	rm -rf $(PACKAGE)-$(VERSION)
 
 localcopy:
 	tar c --exclude=.svn --exclude=.perl_checker --exclude='*~' $(FILES) | tar x -C $(PACKAGE)-$(VERSION)
 
 localrpm: tar $(RPM)
-	cp -f $(NAME).tar $(RPM)/SOURCES
+	cp -f $(NAME)-$(VERSION).tar $(RPM)/SOURCES
 	-rpm -ba --clean $(NAME).spec
-	rm -f $(NAME).tar
+	rm -f $(NAME)-$(VERSION).tar
 
 ci: tar
 	svn ci -m 'Update soft SPEC for version $(VERSION)' $(NAME).spec
@@ -51,7 +51,7 @@ ci: tar
 	# svn cp -m 'Update package SPEC for version $(VERSION)' $(SVNSOFT)/$(NAME).spec $(SVNPACKAGE)/SPECS/
 	mkdir svn; cd svn; mdvsys co $(NAME)
 	cp $(NAME).spec svn/$(NAME)/SPECS/
-	cp $(NAME).tar svn/$(NAME)/SOURCES/
+	cp $(NAME)-$(VERSION).tar svn/$(NAME)/SOURCES/
 	cd svn/$(NAME)/; mdvsys ci -m 'update tarball and spec for version $(VERSION)' 
 
 rpm: clean ci
