@@ -76,7 +76,7 @@ $SIG{TERM} = sub {
 };
 
 my $program_name = 'iurt2';
-my $VERSION = '0.6.4';
+my $VERSION = '0.6.5';
 # sessing parameters
 my $sudo = '/usr/bin/sudo';
 my $arg = @ARGV;
