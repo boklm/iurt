@@ -10,7 +10,6 @@ RPM=$(HOME)/rpm
 
 VENDORLIB = $(shell eval "`perl -V:installvendorlib`"; echo $$installvendorlib)
 INSTALLVENDORLIB = $(DESTDIR)$(VENDORLIB)
-	
 
 SVNSOFT=svn+ssh://svn.mandriva.com/svn/soft/build_system/iurt/trunk/
 SVNPACKAGE=svn+ssh://svn.mandriva.com/svn/packages/cooker/iurt/current/
