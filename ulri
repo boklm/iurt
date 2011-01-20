@@ -368,7 +368,7 @@ foreach my $prefix (keys %pkg_tree) {
 		    my $done_file = "$done_dir/${prefix}_$arch.done";
 
 		    plog('OK', "build ok: $result");
-		    $compildone->{$prefix}{$arch} = 1;
+		    $compildone->{$prefix}{$arch} = 1 unless $result =~ /src\.rpm$/;
 
 		    plog('DEBUG', "copy files to done");
 		    mkpath($done_dir);
