@@ -37,7 +37,7 @@ tar:  dir localcopy
 	rm -rf $(PACKAGE)-$(VERSION)
 
 localcopy:
-	tar c --exclude=.svn $(FILES) | tar x -C $(PACKAGE)-$(VERSION)
+	tar c --exclude=.svn --exclude=.perl_checker --exclude='*~' $(FILES) | tar x -C $(PACKAGE)-$(VERSION)
 
 localrpm: tar $(RPM)
 	cp -f $(NAME).tar $(RPM)/SOURCES
