@@ -14,7 +14,7 @@ Release:	%{release}
 License:	GPL
 Summary:	Packages rebuilder
 Group:		Development/Other
-URL:		http://svn.mandriva.com/cgi-bin/viewvc.cgi/soft/build_system/iurt/trunk/
+URL:		svn://svn.mageia.org/svn/soft/build_system/iurt/trunk
 Source:		%{name}-%{version}-%{svn}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-buildroot
 Requires:	mkcd
