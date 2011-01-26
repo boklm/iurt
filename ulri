@@ -164,7 +164,7 @@ foreach my $k (keys %{$config->{arch_translation}}) {
 }
 
 $run{pidfile_home} = $config->{tmp};
-$run{pidfile} = "upload";
+$run{pidfile} = $program_name;
 my $pidfile = check_pid(\%run);
 
 #my $cache = init_cache(\%run, $config, { done => {} });
