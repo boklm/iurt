@@ -162,7 +162,7 @@ sub perform_command {
 		    }
 		    my $df = df $opt{log};
 		    if ($df->{per} >= 99) {
-			plog('WARN', "WARNING: killing current command because running out of disk space (only $df->{bavail}KB left)");
+			plog('WARN', "WARNING: killing current command because running out of disk space at $opt{log} (only $df->{bavail}KB left)");
 			kill 14, "-$parent_pid";
 			exit();
 		    }
