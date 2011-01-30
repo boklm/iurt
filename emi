@@ -172,7 +172,7 @@ check_upload_tree(\%run, $todo, \&todo_func,);
 # Decide what should be uploaded
 #
 
-foreach my $prefix (keys %pkg_tree) {
+foreach my $prefix (sort keys %pkg_tree) {
     my $target = $pkg_tree{$prefix}{target};
     my $path = $pkg_tree{$prefix}{path};
     my $section = $pkg_tree{$prefix}{section};
