@@ -437,7 +437,7 @@ sub create_chroot {
         sudo($run, $config, '--untar', $chroot_tar, $tmp_chroot, "./var/log/qa");
 
         my $tmp_urpmi = mktemp("$chroot.tmp.XXXXXX");
-        my @installed_pkgs = chomp_(cat_("$tmp_chroot/var/log/qa"));
+        my @installed_pkgs = grep(!/^gpg-pubkey/, chomp_(cat_("$tmp_chroot/var/log/qa")));
         my @available_pkgs = chomp_(`urpmq --urpmi-root $tmp_urpmi --use-distrib $run->{urpmi}{distrib_url} --list -f 2>/dev/null`);
         my @removed_pkgs = difference2(\@installed_pkgs, \@available_pkgs);
         rm_rf($tmp_urpmi);
