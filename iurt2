@@ -432,7 +432,7 @@ my %config_usage = (
     basesystem_packages => {
 	desc => 'List of packages needed for the chroot creation',
 	default => [
-            ($run{distro} =~ /cooker|2008.1/ ? 'basesystem-minimal' : 'basesystem'),
+	    'basesystem-minimal',
 	    'rpm-build',
 	    'sudo',
 	    'urpmi',
