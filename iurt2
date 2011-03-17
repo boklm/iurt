@@ -425,6 +425,10 @@ my %config_usage = (
 	    'contrib' => [ 'release' ]
 	}
     },
+    base_media => {
+	desc => 'List of base media used to build chroot',
+	default => [ 'core/release' ],
+    },
     basesystem_packages => {
 	desc => 'List of packages needed for the chroot creation',
 	default => [

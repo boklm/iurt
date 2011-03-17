@@ -503,7 +503,7 @@ sub build_chroot {
     my $urpmi = $run->{urpmi};
 
     if ($urpmi->{use__urpmi_root}) {
-	if (!$urpmi->add_media__urpmi_root($tmp_chroot)) {
+	if (!$urpmi->add_media__urpmi_root($tmp_chroot, $config->{base_media})) {
 	    plog('ERROR', "urpmi.addmedia --urpmi-root failed");
 	    return 0;
 	}

@@ -188,21 +188,28 @@ sub check_media_added {
 }
 
 sub add_media__urpmi_root {
-    my ($self, $chroot) = @_;
+    my ($self, $chroot, $media) = @_;
     my $run = $self->{run};
     my $config = $self->{config};
     my $cache = $run->{cache};
 
-    plog("adding distrib $self->{distrib_url} with option --urpmi-root in chroot $chroot");
-
-    perform_command("urpmi-addmedia -v --urpmi-root $chroot --distrib $self->{distrib_url} --probe-synthesis", 
+    foreach my $m (@{$media || []}) {
+        my $url = $self->{distrib_url} . "/media/" . $m;
+        my $name = $m;
+        $name =~ s![/:]!_!g;
+        plog("adding media $name from $url with option --urpmi-root in chroot $chroot");
+        perform_command("urpmi-addmedia -v --urpmi-root $chroot $name $url --probe-synthesis", 
 		$run, $config, $cache, 
 		mail => $config->{admin},
 		timeout => 300, 
 		use_iurt_root_command => 1,
 		freq => 1,
 		retry => 2,
-		debug_mail => $run->{debug});
+		debug_mail => $run->{debug})
+          or return;
+    }
+
+    1;
 }
 
 sub add_media {
