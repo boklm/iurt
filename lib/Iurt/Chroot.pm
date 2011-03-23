@@ -510,18 +510,21 @@ sub build_chroot {
     }
     $urpmi->set_command($tmp_chroot);
 
-    if (!$urpmi->install_packages(
-	"chroot",
-	$tmp_chroot,
-	$run->{local_spool},
-	{},
-	'initialize',
-	"[ADMIN] creation of initial chroot failed on $run->{my_arch}",
-	{ maintainer => $config->{admin} },
-	@{$opt->{packages}}
-    )) {
-	plog('ERROR', "Failed to install initial packages during chroot creation.");
-	return 0;
+    # (blino) install meta-task first for prefer.vendor.list to be used
+    foreach my $packages ([ 'meta-task' ], $opt->{packages}) {
+        if (!$urpmi->install_packages(
+            "chroot",
+            $tmp_chroot,
+            $run->{local_spool},
+            {},
+            'initialize',
+            "[ADMIN] creation of initial chroot failed on $run->{my_arch}",
+            { maintainer => $config->{admin} },
+            @$packages
+        )) {
+            plog('ERROR', "Failed to install initial packages during chroot creation.");
+            return 0;
+        }
     }
 
     # <mrl> URPMI saying ok or not, we check this anyway. So that's why
