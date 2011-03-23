@@ -525,6 +525,13 @@ sub build_chroot {
 	return 0;
     }
 
+    # <mrl> URPMI saying ok or not, we check this anyway. So that's why
+    # it's outside the else.
+    if (! -f "$tmp_chroot/usr/bin/rpmbuild") {
+	plog(1, "ERROR: rpm-build is missing!");
+	return 0;
+    }
+
     # remove files used by --urpmi-root
     sudo($run, $config, "--rm", "$tmp_chroot/etc/urpmi/urpmi.cfg");
     sudo($run, $config, "--rm", "$tmp_chroot/var/lib/urpmi/*");
