@@ -510,7 +510,6 @@ sub build_chroot {
     }
     $urpmi->set_command($tmp_chroot);
 
-    # 20060826 warly urpmi --root does not work properly
     if (!$urpmi->install_packages(
 	"chroot",
 	$tmp_chroot,
