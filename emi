@@ -218,7 +218,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 
     $user ||= $config->{upload_user};
 
-    my $command = "/usr/bin/perl -I/usr/share/mdv-youri-submit/lib /usr/share/mdv-youri-submit/bin/youri-submit --verbose --config /etc/youri/submit-upload.conf --define user=$user --define prefix=$prefix --define section=$section $target @packages &> $done/$path/$prefix.youri";
+    my $command = "/usr/bin/perl -I/usr/share/mga-youri-submit/lib /usr/share/mga-youri-submit/bin/youri-submit --verbose --config /etc/youri/submit-upload.conf --define user=$user --define prefix=$prefix --define section=$section $target @packages &> $done/$path/$prefix.youri";
 
     plog('DEBUG', "running $command");
     if (!system($command)) {
