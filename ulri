@@ -257,7 +257,7 @@ sub todo_func {
 sub todo_post {
     my ($todo, $f, $m, $s, $r) = @_;
 
-    if ($r =~ /([^_]*)_(.*).lock$/) {
+    if ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_([\w-]+)\.(\w+)\.(\w+)\.(\d{14})\.(\d+)\.lock$/) {
 	if (!$pkg_tree{$1}{srpms}) {
 	    plog('INFO', "cleaning orphan $r");
 	    unlink "$todo/$f/$m/$s/$r";
