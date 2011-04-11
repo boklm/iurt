@@ -381,7 +381,7 @@ foreach my $prefix (keys %pkg_tree) {
 			last;
 		    } elsif (move("$result_file.new", $result_file)) {
 			create_file($done_file, "$bot $host");
-			$success = 1;
+			$success = $compildone->{$prefix}{$arch};
 		    }
 		}
 		next if $error;
