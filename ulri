@@ -380,8 +380,10 @@ foreach my $prefix (keys %pkg_tree) {
 			$error = 1;
 			last;
 		    } elsif (move("$result_file.new", $result_file)) {
-			create_file($done_file, "$bot $host");
-			$success = $compildone->{$prefix}{$arch};
+			if ($compildone->{$prefix}{$arch}) {
+			    create_file($done_file, "$bot $host");
+			    $success = 1;
+			}
 		    }
 		}
 		next if $error;
