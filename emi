@@ -247,7 +247,8 @@ sub upload_prefix {
     }
 
     $user ||= $config->{upload_user};
-    my $skip = $finish ? "" : "--skip-post genhdlist2 --skip-post mirror";
+    # FIXME we want to skip all post, we should not hardcode them here
+    my $skip = $finish ? "" : "--skip-post genhdlist2 --skip-post mirror --skip-post clean_rpmsrate";
     my $command = "/usr/bin/perl -I/usr/share/mga-youri-submit/lib /usr/share/mga-youri-submit/bin/youri-submit --verbose --config /etc/youri/submit-upload.conf --define user=$user --define prefix=$prefix --define section=$section $skip $target @packages &> $done/$path/$prefix.youri";
 
     plog('DEBUG', "running $command");
