@@ -172,6 +172,10 @@ check_upload_tree(\%run, $todo, \&todo_func,);
 # Decide what should be uploaded
 #
 
+# $targets{$target}{'arch_finisher'}{$arch}: prefix on which we need to actions to get this arch updated
+# $targets{$target}{'to_upload'}: list of prefixes to upload
+my %targets;
+
 foreach my $prefix (sort keys %pkg_tree) {
     my $target = $pkg_tree{$prefix}{target};
     my $path = $pkg_tree{$prefix}{path};
@@ -204,11 +208,37 @@ foreach my $prefix (sort keys %pkg_tree) {
     }
 
     #
-    # All mandatory archs found, upload
+    # All mandatory archs found, mark for upload
     #
+    $targets{$target} ||= {'arch_finisher' => {}, 'is_finisher' => {}, 'to_upload' => []};
 
+    push @{$targets{$target}{'to_upload'}}, $prefix;
+
+    # If we already have found universal finisher, we're fine
+    next if exists $targets{$target}{'arch_finisher'}{'noarch'};
+
+    if ($pkg_tree{$prefix}{arch}{noarch}) {
+	# This package is noarch, genhdlist for it will touch all archs
+        $targets{$target}{'arch_finisher'} = { 'noarch' => $prefix };
+    } else {
+        my $has_new_arch = scalar(difference2([ keys %{$pkg_tree{$prefix}{arch}} ], [ keys %{$targets{$target}{'arch_finisher'}} ]));
+	if ($has_new_arch) {
+	    # We need this package to cover the new arch
+	    # Set it for all, it may allow getting rid of some others
+	    foreach (keys %{$pkg_tree{$prefix}{arch}}) {
+		$targets{$target}{'arch_finisher'}{$_} = $prefix;
+	    }
+	}
+    }
+}
+
+sub upload_prefix {
+    my ($prefix, $finish) = @_;
     my @packages;
     my ($user) = $prefix =~ /\d{14}\.(\w+)\.\w+\.\d+$/;
+    my $target = $pkg_tree{$prefix}{target};
+    my $path = $pkg_tree{$prefix}{path};
+    my $section = $pkg_tree{$prefix}{section};
 
     plog('OK', "all archs done: $prefix");
     foreach my $rpm (@{$pkg_tree{$prefix}{rpms}}) {
@@ -217,8 +247,8 @@ foreach my $prefix (sort keys %pkg_tree) {
     }
 
     $user ||= $config->{upload_user};
-
-    my $command = "/usr/bin/perl -I/usr/share/mga-youri-submit/lib /usr/share/mga-youri-submit/bin/youri-submit --verbose --config /etc/youri/submit-upload.conf --define user=$user --define prefix=$prefix --define section=$section $target @packages &> $done/$path/$prefix.youri";
+    my $skip = $finish ? "" : "--skip-post genhdlist2 --skip-post mirror";
+    my $command = "/usr/bin/perl -I/usr/share/mga-youri-submit/lib /usr/share/mga-youri-submit/bin/youri-submit --verbose --config /etc/youri/submit-upload.conf --define user=$user --define prefix=$prefix --define section=$section $skip $target @packages &> $done/$path/$prefix.youri";
 
     plog('DEBUG', "running $command");
     if (!system($command)) {
@@ -278,6 +308,22 @@ foreach my $prefix (sort keys %pkg_tree) {
     foreach (@{$pkg_tree{$prefix}{todo}}) {
 	plog('DEBUG', "unlink $todo/$path/${prefix}_$_");
 	unlink "$todo/$path/${prefix}_$_";
+    }
+}
+
+foreach my $target (keys %targets) {
+    my %is_finisher;
+    foreach (values %{$targets{$target}{'arch_finisher'}}) {
+	$is_finisher{$_} = 1;
+    }
+
+    foreach my $prefix (@{$targets{$target}{'to_upload'}}) {
+	next if $is_finisher{$prefix};
+	upload_prefix($prefix);
+    }
+
+    foreach my $prefix (keys %is_finisher) {
+	upload_prefix($prefix, 1);
     }
 }
 
