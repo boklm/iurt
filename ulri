@@ -355,6 +355,7 @@ foreach my $prefix (keys %pkg_tree) {
 	    if (!$fail) {
 		my @list = split "\n", sout($remote, "ls $prefix_dir");
 		my $error;
+		my $done;
 
 		my $arch_check = join '|', $arch, if_($untranslated_arch{$arch}, @{$untranslated_arch{$arch}});
 		plog('MSG', "checking for $arch_check arch");
@@ -369,7 +370,7 @@ foreach my $prefix (keys %pkg_tree) {
 
 		    plog('OK', "build ok: $result");
 		    if ($result =~ /\.$arch_check\.rpm$/) {
-			$compildone->{$prefix}{$arch} = 1;
+			$done = 1;
 		    }
 
 		    plog('DEBUG', "copy files to done");
@@ -380,7 +381,7 @@ foreach my $prefix (keys %pkg_tree) {
 			$error = 1;
 			last;
 		    } elsif (move("$result_file.new", $result_file)) {
-			if ($compildone->{$prefix}{$arch}) {
+			if ($done) {
 			    create_file($done_file, "$bot $host");
 			    $success = 1;
 			}
