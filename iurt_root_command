@@ -30,6 +30,7 @@ use File::NCopy qw(copy);
 use Iurt::Util qw(plog_init plog);
 use Cwd 'realpath';
 use File::Path qw(make_path);
+use File::Slurp;
 
 my $arg = @ARGV;
 my (@params, %run);
