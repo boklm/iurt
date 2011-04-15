@@ -1,12 +1,13 @@
 #!/bin/bash -e
 
 # Do not use trailing slashes here
-UPLOADSDIR=/home/mandrake/uploads
+#TODO use a configuration file for that 
+UPLOADSDIR=/var/lib/schedbot/uploads
 SRCBASEDIR=$UPLOADSDIR/queue
 DESTBASEDIR=$UPLOADSDIR/approved
 REJECTEDDIR=$UPLOADSDIR/rejected
 LATERBASEDIR=$UPLOADSDIR/later
-DISTRO=cooker
+DISTRO=cauldron
 
 function list() {
 	echo "The following packages are currently queued:" >&2
