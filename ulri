@@ -562,12 +562,8 @@ foreach my $prefix (sort keys %pkg_tree) {
     my $media = $ent->{media};
     my $target = $ent->{target};
     my $srpms = $ent->{srpms} or next;
-    my $user = $ent->{user};
-    if ($user) {
-	$user = get_author_email($user) || $config->{packager};
-    } else {
-	$user = $config->{packager};
-    }
+    
+    my $user = get_author_email($ent->{user}) || $config->{packager};
     $user =~ s/([<>])/\\$1/g;
 
     # Local pathnames
