@@ -25,10 +25,12 @@ use lib '/usr/local/lib/perl/iurt/lib';
 use strict;
 my $program_name = 'iurt_root_command';
 use Mkcd::Commandline qw(parseCommandLine usage);
-use MDK::Common;
+use MDK::Common qw(if_);
 use File::NCopy qw(copy);
 use Iurt::Util qw(plog_init plog);
 use Cwd 'realpath';
+use File::Path qw(make_path);
+use List::MoreUtils qw(any);
 
 my $arg = @ARGV;
 my (@params, %run);
@@ -214,7 +216,7 @@ sub mkdir {
 	    plog('FAIL', "ERROR: $path creation forbidden");
 	}
 	if ($opt->{parents}) {
-	    mkdir_p $path;
+	    make_path($path);
 	} else {
 	    mkdir $path;
 	}
@@ -383,7 +385,7 @@ sub untar {
 	plog('FAIL', "untar: options forbidden");
 	return;	
     }
-    mkdir_p($dir);
+    make_path($dir);
     return !system('tar', 'xf', $file, '-C', $dir, @o_files);
 }
 
