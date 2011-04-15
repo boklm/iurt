@@ -39,7 +39,7 @@ use Iurt::File qw(check_upload_tree);
 use Iurt::Mail qw(sendmail);
 use Iurt::Util qw(plog_init plog ssh_setup ssh sout sget sput);
 use File::Copy 'move';
-use File::Path 'mkpath';
+use File::Path 'make_path';
 use File::Temp 'mktemp';
 use Filesys::Df qw(df);
 use Data::Dumper;
@@ -374,7 +374,7 @@ foreach my $prefix (keys %pkg_tree) {
 		    }
 
 		    plog('DEBUG', "copy files to done");
-		    mkpath($done_dir);
+		    make_path($done_dir);
 		    if (sget($remote, "$prefix_dir/$result",
 				 "$result_file.new")) {
 			plog('ERR', "copying $result from $host failed ($!)");
@@ -452,7 +452,7 @@ foreach my $prefix (keys %pkg_tree) {
 
 	plog('FAIL', "build failed");
 	create_file("$done_dir/${prefix}_$arch.fail", "$bot $host");
-	mkpath($fail_dir);
+	make_path($fail_dir);
 
 	if (sget($remote, "$prefix_dir/", "$fail_dir/")) {
 	    plog('ERR', "copying from $host:$prefix_dir/ " .
@@ -575,8 +575,8 @@ foreach my $prefix (sort keys %pkg_tree) {
     my $todo_dir = "$todo/$path";
 
     # Make sure these exist
-    mkpath($done_dir);
-    mkpath($todo_dir);
+    make_path($done_dir);
+    make_path($todo_dir);
 
     #plog('DEBUG', "searching a bot to compile @$srpms");
 
