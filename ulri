@@ -33,7 +33,7 @@
 
 use strict;
 use MDK::Common qw(cat_);
-use Iurt::Config qw(config_usage get_date config_init dump_cache init_cache get_author_email check_arch check_noarch);
+use Iurt::Config qw(config_usage get_date config_init get_author_email check_arch check_noarch);
 use Iurt::Process qw(check_pid);
 use Iurt::File qw(check_upload_tree);
 use Iurt::Mail qw(sendmail);
@@ -138,10 +138,6 @@ my %config_usage = (
 	desc => "Root of the tree where the packages to compile are located",
 	default => "$HOME/uploads"
     },
-    cache_home => {
-	desc => 'Where to store the cache files',
-	default => "$HOME/.bugs"
-    },
     tmp => {
        desc => "Temporary directory",
        default => "$HOME/tmp"
@@ -168,8 +164,6 @@ $run{pidfile_home} = $config->{tmp};
 $run{pidfile} = $program_name;
 my $pidfile = check_pid(\%run);
 
-#my $cache = init_cache(\%run, $config, { done => {} });
-my $cache = { done => {} };
 
 my ($fulldate, $daydate) = get_date();
 $run{daydate} = $daydate;
@@ -183,7 +177,7 @@ if ($df->{per} == 100) {
 ($fulldate, $daydate) = get_date();
 
 my %pkg_tree;
-my $compildone = $cache->{done};
+my $compildone = {};
 
 my $todo = "$config->{queue}/todo";
 my $failure = "$config->{queue}/failure";
@@ -744,7 +738,6 @@ plog('INFO', "jobs in queue:", %to_compile ?
 
 
 unlink $pidfile;
-#dump_cache(\%run);
 exit();
 
 
