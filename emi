@@ -28,7 +28,7 @@
 # PREFIX : sprintf "$year%02d%02d%02d%02d%02d.$user.$host.${$}_", $mon, $mday, $hour, $min, $sec;
 
 use strict;
-use MDK::Common;
+use File::Path qw(make_path);
 use Iurt::Config qw(config_usage config_init get_author_email);
 use Iurt::Process qw(check_pid);
 use Iurt::Mail qw(sendmail);
@@ -272,7 +272,7 @@ sub upload_prefix {
     } else {
 	# should send a mail or something
 	plog('ERR', "upload failed ($!), rejecting files in $reject/$path/");
-	mkdir_p("$reject/$path");
+	make_path("$reject/$path");
 	foreach my $rpm (@{$pkg_tree{$prefix}{rpms}}) {
 	    link "$done/$path/${prefix}_$rpm", "$reject/$path/${prefix}_$rpm";
 	    plog('ERR', "ERROR: link of $rpm failed ($!)");
