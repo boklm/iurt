@@ -6,6 +6,7 @@ use Data::Dumper;
 use MDK::Common;
 use Iurt::Util qw(plog);
 use strict;
+use Sys::Hostname;
 
 our @EXPORT = qw(
     config_usage
@@ -106,7 +107,7 @@ sub get_date {
 
 sub get_prefix {
     my ($luser) = @_;
-    my $hostname = `hostname`;
+    my $hostname = hostname();
     my ($fulldate) = get_date();
     my ($host) = $hostname =~ /([^.]*)/;
     join('.', $fulldate, $luser, $host, $$) . '_';
