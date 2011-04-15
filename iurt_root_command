@@ -20,8 +20,6 @@
 #
 # run commands which needs root privilege
 #
-use lib '/usr/local/lib/perl/iurt/lib';
-
 use strict;
 my $program_name = 'iurt_root_command';
 use Mkcd::Commandline qw(parseCommandLine usage);
