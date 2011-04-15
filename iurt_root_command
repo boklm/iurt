@@ -50,8 +50,9 @@ $run{todo} = [];
 		    [--mkdir [--parents] <dir1> <dir2> ... <dirn>]", 
     "$program_name is a perl script to execute commands which need root privilege, it helps probram which needs occasional root privileges for some commands.", 
     sub { $arg or usage($program_name, \@params) }, "Running $program_name" ],
+
     [ "", "cp", [
-   ["", "cp", -1, "[-r] <file1> <file2> ... <filen> <dest>", "copy the files to dest",
+    ["", "cp", -1, "[-r] <file1> <file2> ... <filen> <dest>", "copy the files to dest",
         sub {    
             my ($tmp, @arg) = @_; 
             $tmp->[0] ||= {}; 
@@ -64,6 +65,7 @@ $run{todo} = [];
     ], "[-r] <file1> <file2> ... <filen> <dest>", 
     "Copy files", 
     \&cp, "Copying files" ],
+
    [ "", "ln", [
    ["", "ln", 2, "<file1> <file2>", "link file1 to file2",
         sub {    
@@ -72,12 +74,10 @@ $run{todo} = [];
             push @$tmp, @arg; 
             1;
         }, "Setting ln command arguments"], 
-#        ["r", "recursive", 0, "",  
-#        "Also create needed parents directories",  
-#        sub { my ($tmp) = @_; $tmp->[0]{recursive} = 1; 1 }, "Set the recursive flag"], 
     ], "<file1> <file2>", 
     "Link files", 
     \&ln, "Linking files" ],
+
     [ "", "mkdir", [
     ["", "mkdir", -1, "[--parents] <dir1> <dir2> ... <dirn>", "mkdir create the given path",
         sub {    
@@ -92,8 +92,9 @@ $run{todo} = [];
     ], "[--parents] <dir1> <dir2> ... <dirn>", 
     "mkdir create the given path", 
     \&mkdir, "Creating the path" ],
+
     [ "", "rm", [
-   ["", "rm", -1, "[-r] <file1> <file2> ... <filen>", "remove the provided files",
+    ["", "rm", -1, "[-r] <file1> <file2> ... <filen>", "remove the provided files",
         sub {    
             my ($tmp, @arg) = @_; 
             $tmp->[0] ||= {}; 
@@ -106,17 +107,21 @@ $run{todo} = [];
     ], "[-r] <file1> <file2> ... <filen>", 
     "Remove files", 
     \&rm, "Removing files" ],
+
     [ "", "initdb", 1 , "<chroot>", 
     "perform a rpm --initdb in the chroot.", 
     \&initdb, "Initializing the rpm database" ],
+
     [ "v", "verbose", 1, "<verbose level>", 
     "modprobe try to modprobe the given module if authorized.", 
     sub { $run{verbose} = $_[0]; 1 }, "Setting verbose level" ],
+    
     [ "", "modprobe", 1, "<module>", 
     "modprobe try to modprobe the given module if authorized.", 
     \&modprobe, "Modprobing" ],
-   [ "", "tar", [
-   ["", "tar", 2, "<file> <directory>", "tar directory into file",
+
+    [ "", "tar", [
+    ["", "tar", 2, "<file> <directory>", "tar directory into file",
         sub {    
             my ($tmp, @arg) = @_; 
             $tmp->[0] ||= {}; 
@@ -126,8 +131,9 @@ $run{todo} = [];
     ], "<file> <directory>", 
     "Create tarball", 
     \&tar, "Create tarball" ],
-   [ "", "untar", [
-   ["", "untar", -1, "<file> <directory> [files]", "untar file into directory (optionally selecting files only)",
+
+    [ "", "untar", [
+    ["", "untar", -1, "<file> <directory> [files]", "untar file into directory (optionally selecting files only)",
         sub {    
             my ($tmp, @arg) = @_; 
             $tmp->[0] ||= {}; 
@@ -137,17 +143,21 @@ $run{todo} = [];
     ], "<file> <directory> [files]", 
     "Uncompress tarball", 
     \&untar, "Uncompress tarball" ],
+
     [ "", "bindmount", 2, "<source> <dest>", 
     "bind mount source on dest", 
     \&bindmount, "Bind mounting" ],
+
     [ "", "umount", 1, "<directory>", 
     "umount the given directory", 
     \&umount, "Unmounting" ],
+
     [ "", "useradd", 3, "<directory> <username> [uid]", 
     "Add user in given chroot", 
     \&useradd, "Useradd" ],
-   [ "", "urpmi", [
-   ["", "urpmi", -1, "urpmi options", "run urpmi with urpmi options (should have chroot options)",
+
+    [ "", "urpmi", [
+    ["", "urpmi", -1, "urpmi options", "run urpmi with urpmi options (should have chroot options)",
         sub {    
             my ($tmp, @arg) = @_; 
             push @$tmp, @arg; 
