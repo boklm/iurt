@@ -469,10 +469,6 @@ my %config_usage = (
 	desc => 'Home dir',
 	default => $HOME
     },
-    install_chroot_binary => {
-	desc => 'Tool used to create initial chroot',
-	default => 'install-chroot-tar.sh'
-    },
     local_home => {
 	desc => 'Where to build packages',
 	default => $HOME
