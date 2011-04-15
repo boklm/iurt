@@ -32,7 +32,7 @@
 #
 
 use strict;
-use MDK::Common;
+use MDK::Common qw(cat_);
 use Iurt::Config qw(config_usage get_date config_init dump_cache init_cache get_author_email check_arch check_noarch);
 use Iurt::Process qw(check_pid);
 use Iurt::File qw(check_upload_tree);
