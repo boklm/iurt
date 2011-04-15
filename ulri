@@ -43,6 +43,7 @@ use File::Path 'make_path';
 use File::Temp 'mktemp';
 use Filesys::Df qw(df);
 use Data::Dumper;
+use File::Slurp qw(read_file);
 
 my %run;
 my $program_name = 'ulri';
@@ -507,13 +508,7 @@ foreach my $prefix (keys %pkg_tree) {
 
 	    $text .= "\nFailure details available in $fpath/log\n";
 	    $text .= "Reason:\n";
-	    open my $FP, "$fail_dir/$prefix/log/status.log";
-            local $_;
-	    while (<$FP>) {
-		$text .= $_;
-	    }
-	    close $FP;
-
+	    $text .= read_file("$fail_dir/$prefix/log/status.log");
 	    $text .= "\nLog files generated:\n";
 
 	    opendir my $DP1, "$fail_dir/$prefix/log/";
