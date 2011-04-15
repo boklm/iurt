@@ -582,7 +582,6 @@ foreach my $prefix (sort keys %pkg_tree) {
     # need to find a bot for each arch
     foreach my $arch (keys %{$config->{bot}}) {
 	my $exclude;
-	my $noarch;
 
 	# Skip this arch if package is building as noarch
 	#
@@ -594,7 +593,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 	# If all packages in a group are noarch, consider the entire group
 	# as noarch
 	#
-	$noarch = 1;
+	my $noarch = 1;
 	foreach my $srpm (@$srpms) {
 	    if (!check_noarch("$todo_dir/${prefix}_$srpm")) {
 		$noarch = 0;
