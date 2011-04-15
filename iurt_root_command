@@ -30,7 +30,6 @@ use File::NCopy qw(copy);
 use Iurt::Util qw(plog_init plog);
 use Cwd 'realpath';
 use File::Path qw(make_path);
-use List::MoreUtils qw(any);
 
 my $arg = @ARGV;
 my (@params, %run);
@@ -378,7 +377,7 @@ sub untar {
 	return;	
     }
     check_path_authorized($file) && check_path_authorized($dir) or return;
-    if (any { /^-/ } @o_files) {
+    if (grep { /^-/ } @o_files) {
 	plog('FAIL', "untar: options forbidden");
 	return;	
     }
