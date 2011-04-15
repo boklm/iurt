@@ -108,10 +108,6 @@ $run{todo} = [];
     "Remove files", 
     \&rm, "Removing files" ],
 
-    [ "", "initdb", 1 , "<chroot>", 
-    "perform a rpm --initdb in the chroot.", 
-    \&initdb, "Initializing the rpm database" ],
-
     [ "v", "verbose", 1, "<verbose level>", 
     "modprobe try to modprobe the given module if authorized.", 
     sub { $run{verbose} = $_[0]; 1 }, "Setting verbose level" ],
@@ -232,15 +228,6 @@ sub mkdir {
 	}
     }
     1;
-}
-
-sub initdb {
-    my ($_run, $chroot) = @_;
-    if (-d $chroot && $chroot !~ /chroot|unionfs/) {
-	plog('FAIL', "rpm --initdb not authorized in $chroot");
-	return 0;
-    }
-    !system('rpm', '--initdb', '--root', $chroot);
 }
 
 sub rm {
