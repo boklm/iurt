@@ -203,12 +203,9 @@ sub modprobe {
 	plog("ERROR: unauthorized module $module");
 	return 0;
     }
-    open my $modules, '/proc/modules';
-    while (my $m = <$modules>) {
-	if ($m =~ /unionfs/) {
-	    return 1;
-	}
-    }
+    
+    return 1 if grep { /^$module\b/ } read_file("/proc/modules");
+
     system("/sbin/depmod", "-a");
     !system("/sbin/modprobe", "-f", $module);
 }
