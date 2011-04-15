@@ -1,10 +1,11 @@
 #!/bin/bash -e
 
 # Do not use trailing slashes here
-SRCBASEDIR=/home/mandrake/uploads/queue
-DESTBASEDIR=/home/mandrake/uploads/approved
-REJECTEDDIR=/home/mandrake/uploads/rejected
-LATERBASEDIR=/home/mandrake/uploads/later
+UPLOADSDIR=/home/mandrake/uploads
+SRCBASEDIR=$UPLOADSDIR/queue
+DESTBASEDIR=$UPLOADSDIR/approved
+REJECTEDDIR=$UPLOADSDIR/rejected
+LATERBASEDIR=$UPLOADSDIR/later
 DISTRO=cooker
 
 function list() {
