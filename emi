@@ -87,10 +87,6 @@ my %config_usage = (
 	desc => 'Architecture root dir',
 	default => "/mnt/BIG/dis/"
     },
-    cache_home => {
-	desc => 'Where to store the cache files',
-	default => "$HOME/.bugs"
-    },
     upload_user => {
 	desc => 'User who is uploading packages',
 	default => 'mandrake'
