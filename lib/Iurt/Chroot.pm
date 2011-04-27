@@ -277,7 +277,7 @@ sub create_temp_chroot {
     } else {
 	plog("Install new chroot");
 	plog('DEBUG', "... in $chroot_tmp");
-	clean_chroot($chroot_tmp, $chroot_tar, $run, $config);
+	clean_chroot($chroot_tmp, $chroot_tar, $run, $config) or return;
 	update_chroot($chroot_tmp, $run, $config);
     }
     $union_id, $chroot_tmp;
