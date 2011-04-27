@@ -80,6 +80,9 @@ sub clean_chroot {
     # First try
     if (sudo($run, $config, '--untar', $chroot_tar, $chroot)) {
 	create_build_chroot($chroot, $chroot_tar, $run, $config);
+    } else {
+	plog('ERROR', "Failed to untar chroot");
+        return;
     }
 
     # <mrl> 20071106 Second try?
