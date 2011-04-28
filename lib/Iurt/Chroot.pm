@@ -77,17 +77,10 @@ sub clean_chroot {
 	return 1;
     }
  
-    # First try
-    if (sudo($run, $config, '--untar', $chroot_tar, $chroot)) {
-	create_build_chroot($chroot, $chroot_tar, $run, $config);
-    } else {
-	plog('ERROR', "Failed to untar chroot");
+    sudo($run, $config, '--untar', $chroot_tar, $chroot);
+    if (!create_build_chroot($chroot, $chroot_tar, $run, $config)) {
+	plog('ERROR', "Failed to create chroot");
         return;
-    }
-
-    # <mrl> 20071106 Second try?
-    if (!-d "$chroot/proc" || !-d "$chroot/home/builder") {
-	create_build_chroot($chroot, $chroot_tar, $run, $config);
     }
 
     if (!dump_rpmmacros($run, $config, "$chroot/home/builder/.rpmmacros")) {
@@ -100,12 +93,15 @@ sub clean_chroot {
     }
     if (!sudo($run, $config, '--bindmount', "/dev/pts", "$chroot/dev/pts")) {
 	plog('ERROR', "Failed to mount dev/pts");
+	sudo($run, $config, "--umount", "$chroot/proc");
 	return;
     }
     if ($run->{icecream}) {
 	system("$sudo mkdir -p $chroot/var/cache/icecream");
 	if (!sudo($run, $config, '--bindmount', "/var/cache/icecream", "$chroot/var/cache/icecream")) {
 	    plog('ERROR', "Failed to mount var/cache/icecream");
+	    sudo($run, $config, "--umount", "$chroot/proc");
+	    sudo($run, $config, "--umount", "$chroot/dev/pts");
 	    return;
 	}
     }
@@ -119,6 +115,11 @@ sub clean_chroot {
 	    sudo($run, $config, '--mkdir', '-p', $mount_point);
 	    if (!sudo($run, $config, '--bindmount', $url, $mount_point)) {
 		plog('ERROR', "Failed to mount $url on $mount_point");
+		sudo($run, $config, "--umount", "$chroot/proc");
+		sudo($run, $config, "--umount", "$chroot/dev/pts");
+		if ($run->{icecream}) {
+		    sudo($run, $config, "--umount", "$chroot/var/cache/icecream");
+		}
 		return;
 	    }
 	}
