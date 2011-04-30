@@ -32,6 +32,8 @@ our %arch_comp = (
     'ppc' => { 'ppc' => 1 },
     'ppc64' => { 'ppc' => 1, 'ppc64' => 1 },
     'armv5tejl' => { 'armv5tl' => 1 },
+    'armv5tel' => { 'armv5tl' => 1 },
+    'armv7l' => { 'armv5tl' => 1 },
 );
 
 
