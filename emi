@@ -126,10 +126,12 @@ my %excluded;
 sub done_func {
     my ($_todo, $f, $m, $s, $r) = @_;
 
+    my $media = "$m/$s";
+
     if ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*\.([^.]+)\.rpm)$/) {
 	my ($prefix, $rpm, $arch) = ($1, $2, $3);
 	$arch = $config->{arch_translation}{$arch} if $config->{arch_translation}{$arch};
-	plog('DEBUG', "found rpm $rpm ($prefix)");
+	plog('DEBUG', "found rpm $rpm ($prefix) for media $media");
 	$pkg_tree{$prefix}{path} = "/$f/$m/$s";
 	$pkg_tree{$prefix}{arch}{$arch} = 1;
 	$pkg_tree{$prefix}{target} = $f;

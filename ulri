@@ -296,245 +296,245 @@ my %later;
 foreach my $prefix (keys %pkg_tree) {
     my $ent = $pkg_tree{$prefix};
     foreach my $media (keys %{$ent->{media}}) {
-    my $path = $ent->{media}{$media}{path};
-    my $user = $ent->{user};
+        my $path = $ent->{media}{$media}{path};
+        my $user = $ent->{user};
 
-    # Local pathnames
-    my $done_dir = "$done/$path";
-    my $todo_dir = "$todo/$path";
-    my $fail_dir = "$failure/$path";
+        # Local pathnames
+        my $done_dir = "$done/$path";
+        my $todo_dir = "$todo/$path";
+        my $fail_dir = "$failure/$path";
 
-    bot: foreach my $bot_list (@{$ent->{media}{$media}{bot}}) {
-	my ($bot, $host, $date, $pid, $arch, $time) =
-			@$bot_list{qw(bot host date pid arch time)};
+        bot: foreach my $bot_list (@{$ent->{media}{$media}{bot}}) {
+	    my ($bot, $host, $date, $pid, $arch, $time) =
+			    @$bot_list{qw(bot host date pid arch time)};
 
-	my $bot_conf = $config->{bot}{$arch}{$host}{$bot};
-        my $remote = ssh_setup($config->{ssh_options},
-					$bot_conf->{user}, $host);
-
-	# If our build is noarch, set arch appropriately.
-	#
-	my $lock_file =
-	    "$todo_dir/${prefix}_$arch-noarch.$bot.$host.$date.$pid.lock";
-
-	if (-f $lock_file) {
-	    plog('DEBUG', "$prefix is noarch");
-	    $arch = "noarch";
-	} else {
-	    $lock_file =~ s/-noarch//;
-	}
-
-	my $prefix_dir = "$bot_conf->{packages}/$path/$prefix/";
-	my $status_file = "$prefix_dir/log/status.log";
-
-	plog('INFO', "check status: $host/$arch ($bot [$pid])");
-	my $status = sout($remote, "cat $status_file");
-	my $success;
-	my $fail;
-	my $later;
-
-	# Check if the build bot finished on the other side
-	#
-	if ($status) {
-	    plog('INFO', "check result: $host/$arch ($bot [$pid])");
-	    foreach my $res (split "\n", $status) {
-		my ($p, $r) = $res =~ /(.*):\s+(.*)/;
-		plog('DEBUG', $res);
-		if ($r eq 'install_deps_failure') {
-		    plog('FAIL', "install deps failure, rebuild later: $p");
-		    $later{$prefix} = 1;
-		    $later = 1;
-		}
-		if ($r ne 'ok') {
-		    plog('FAIL', "$r: $p");
-		    $fail = 1;
-		}
+	    my $bot_conf = $config->{bot}{$arch}{$host}{$bot};
+            my $remote = ssh_setup($config->{ssh_options},
+				   $bot_conf->{user}, $host);
+	    
+	    # If our build is noarch, set arch appropriately.
+	    #
+	    my $lock_file =
+	        "$todo_dir/${prefix}_$arch-noarch.$bot.$host.$date.$pid.lock";
+	    
+	    if (-f $lock_file) {
+	        plog('DEBUG', "$prefix is noarch");
+	        $arch = "noarch";
+	    } else {
+	        $lock_file =~ s/-noarch//;
 	    }
+	    
+	    my $prefix_dir = "$bot_conf->{packages}/$path/$prefix/";
+	    my $status_file = "$prefix_dir/log/status.log";
 
-	    if (!$fail) {
-		my @list = split "\n", sout($remote, "ls $prefix_dir");
-		my $error;
-		my $done;
-
-		my $arch_check = join '|', $arch, if_($untranslated_arch{$arch}, @{$untranslated_arch{$arch}});
-		plog('MSG', "checking for $arch_check arch");
-		foreach my $result (@list) {
-		    $result =~ /\.(src|$arch_check|noarch)\.rpm$/ or next;
-
-		    # do not copy the initial src package
-		    $result =~ /^$prefix/ and next;
-
-		    my $result_file = "$done_dir/${prefix}_$result";
-		    my $done_file = "$done_dir/${prefix}_$arch.done";
-
-		    plog('OK', "build ok: $result");
-		    if ($result =~ /\.$arch_check\.rpm$/) {
-			$done = 1;
+	    plog('INFO', "check status: $host/$arch ($bot [$pid])");
+	    my $status = sout($remote, "cat $status_file");
+	    my $success;
+	    my $fail;
+	    my $later;
+	    
+	    # Check if the build bot finished on the other side
+	    #
+	    if ($status) {
+		plog('INFO', "check result: $host/$arch ($bot [$pid])");
+		foreach my $res (split "\n", $status) {
+		    my ($p, $r) = $res =~ /(.*):\s+(.*)/;
+		    plog('DEBUG', $res);
+		    if ($r eq 'install_deps_failure') {
+			plog('FAIL', "install deps failure, rebuild later: $p");
+			$later{$prefix} = 1;
+			$later = 1;
 		    }
-
-		    plog('DEBUG', "copy files to done");
-		    make_path($done_dir);
-		    if (sget($remote, "$prefix_dir/$result",
+		    if ($r ne 'ok') {
+			plog('FAIL', "$r: $p");
+			$fail = 1;
+		    }
+		}
+		
+		if (!$fail) {
+		    my @list = split "\n", sout($remote, "ls $prefix_dir");
+		    my $error;
+		    my $done;
+		    
+		    my $arch_check = join '|', $arch, if_($untranslated_arch{$arch}, @{$untranslated_arch{$arch}});
+		    plog('MSG', "checking for $arch_check arch");
+		    foreach my $result (@list) {
+			$result =~ /\.(src|$arch_check|noarch)\.rpm$/ or next;
+			
+			# do not copy the initial src package
+			$result =~ /^$prefix/ and next;
+			
+			my $result_file = "$done_dir/${prefix}_$result";
+			my $done_file = "$done_dir/${prefix}_$arch.done";
+			
+			plog('OK', "build ok: $result");
+			if ($result =~ /\.$arch_check\.rpm$/) {
+			    $done = 1;
+			}
+			
+			plog('DEBUG', "copy files to done");
+			make_path($done_dir);
+			if (sget($remote, "$prefix_dir/$result",
 				 "$result_file.new")) {
-			plog('ERR', "copying $result from $host failed ($!)");
-			$error = 1;
-			last;
-		    } elsif (move("$result_file.new", $result_file)) {
-			if ($done) {
-			    create_file($done_file, "$bot $host");
-			    $success = 1;
+			    plog('ERR', "copying $result from $host failed ($!)");
+			    $error = 1;
+			    last;
+			} elsif (move("$result_file.new", $result_file)) {
+			    if ($done) {
+				create_file($done_file, "$bot $host");
+				$success = 1;
+			    }
 			}
 		    }
+		    next if $error;
+		    
+		    # Do nothing if the scp failed, wait for the other run
+		    # (it may be a disk full problem)
+		    # next if $error;
+		    #if ($success) {
+		    # The SRPM should be recreated thus no need to copy it
+		    # foreach my $srpm (@{$ent->{srpms}}) {
+		    #     plog("linking $todo_dir/${prefix}_$srpm to $done_dir/${prefix}_$srpm");
+		    #     link "$todo_dir/${prefix}_$srpm", "$done_dir/${prefix}_$srpm"
+		    # 	}
+		    # FIXME Have to remove remote remaining packages and directory
+		    #}
 		}
-		next if $error;
-
-		# Do nothing if the scp failed, wait for the other run
-		# (it may be a disk full problem)
-		# next if $error;
-		#if ($success) {
-		# The SRPM should be recreated thus no need to copy it
-		# foreach my $srpm (@{$ent->{srpms}}) {
-		#     plog("linking $todo_dir/${prefix}_$srpm to $done_dir/${prefix}_$srpm");
-		#     link "$todo_dir/${prefix}_$srpm", "$done_dir/${prefix}_$srpm"
-		# 	}
-		# FIXME Have to remove remote remaining packages and directory
-		#}
+	    } # if ($status)
+	    
+	    #
+	    # Handle build failure
+	    #
+	    
+	    my $proc_state;
+	    if (!$fail) {
+		chomp($proc_state = sout($remote, "ps h -o state $pid"));
 	    }
-	} # if ($status)
-
-	#
-	# Handle build failure
-	#
-
-	my $proc_state;
-	if (!$fail) {
-	    chomp($proc_state = sout($remote, "ps h -o state $pid"));
-	}
-
-	my $seconds = time()-$time;
-
-	# Reasons for failure
-	my $timeout = $seconds > $config->{faildelay};
-	my $zombie = $proc_state eq 'Z';
-	my $ended = !$proc_state;
-
-	unless ($success || $later || $fail || $timeout || $zombie || $ended) {
-	    next bot;
-	}
-
-	plog('INFO', "delete lock file for $prefix");
-	unlink $lock_file;
-
-	$run{bot}{$host}{$bot} = 0;
-
-	if ($later) {
-	    next bot;
-	}
-
-	if (!$ended && !$fail) {
-	    plog('FAIL', "$bot timed out on $host/$arch ($seconds sec) or " .
-			"it's dead (status $proc_state), removing lock");
-	    $compildone->{$prefix}{$media}{$arch} = 0;
-	    next bot;
-	}
-
-	if ($success && !$fail) {
-	    next bot;
-	}
-
-	if (!$status) {
+	    
+	    my $seconds = time()-$time;
+	    
+	    # Reasons for failure
+	    my $timeout = $seconds > $config->{faildelay};
+	    my $zombie = $proc_state eq 'Z';
+	    my $ended = !$proc_state;
+	    
+	    unless ($success || $later || $fail || $timeout || $zombie || $ended) {
+		next bot;
+	    }
+	    
+	    plog('INFO', "delete lock file for $prefix");
+	    unlink $lock_file;
+	    
+	    $run{bot}{$host}{$bot} = 0;
+	    
+	    if ($later) {
+		next bot;
+	    }
+	    
+	    if (!$ended && !$fail) {
+		plog('FAIL', "$bot timed out on $host/$arch ($seconds sec) or " .
+		     "it's dead (status $proc_state), removing lock");
+		$compildone->{$prefix}{$media}{$arch} = 0;
+		next bot;
+	    }
+	    
+	    if ($success && !$fail) {
+		next bot;
+	    }
+	    
+	    if (!$status) {
 	    plog('ERR', "build bot died on $host, reschedule compilation");
 	    next bot;
-	}
-
-	plog('INFO', "Failure reason: $success || $later || $fail || $timeout || $zombie || $ended");
-
-	plog('FAIL', "build failed");
-	create_file("$done_dir/${prefix}_$arch.fail", "$bot $host");
-	make_path($fail_dir);
-
-	if (sget($remote, "$prefix_dir/", "$fail_dir/")) {
-	    plog('ERR', "copying from $host:$prefix_dir/ " .
-					"to $fail_dir/ failed ($!)");
-	    $compildone->{$prefix}{$media}{$arch} = 0;
-	    # clean the log on the compilation machine
-	    ssh($remote, "rm -rf $prefix_dir");
-	    next bot;
-	}
-
-        # What to do with the previously build packages? Move them to
-	# failure, rejected ?
-	# 20061220 warly move them to failure for now
-
-	foreach my $rpm (@{$ent->{rpms}}) {
-	    my $file = "$done_dir/${prefix}_$rpm";
-	    plog('DEBUG', "moving built rpm $file to $fail_dir/${prefix}_$rpm");
-	    link $file, "$fail_dir/${prefix}_$rpm";
-	    unlink $file;
-	}
-	# Should clean the queue 
-	# Must remove the SRPM and the lock 
-	foreach my $srpm (@{$ent->{srpms}}) {                                
-	    my $file = "$todo_dir/${prefix}_$srpm";
-	    plog('DEBUG', "moving $file to $fail_dir/${prefix}_$srpm");
-	    link $file, "$fail_dir/${prefix}_$srpm";
-	    delete $pkg_tree{$prefix};
-	    unlink $file;
-	    # If one arch has been generated, we also have a src.rpm in done
-	    $file = "$done_dir/${prefix}_$srpm";
-	    if (-f $file) {
-		plog('DEBUG', "deleting $file");
+	    }
+	    
+	    plog('INFO', "Failure reason: $success || $later || $fail || $timeout || $zombie || $ended");
+	    
+	    plog('FAIL', "build failed");
+	    create_file("$done_dir/${prefix}_$arch.fail", "$bot $host");
+	    make_path($fail_dir);
+	    
+	    if (sget($remote, "$prefix_dir/", "$fail_dir/")) {
+		plog('ERR', "copying from $host:$prefix_dir/ " .
+		     "to $fail_dir/ failed ($!)");
+		$compildone->{$prefix}{$media}{$arch} = 0;
+		# clean the log on the compilation machine
+		ssh($remote, "rm -rf $prefix_dir");
+		next bot;
+	    }
+	    
+	    # What to do with the previously build packages? Move them to
+	    # failure, rejected ?
+	    # 20061220 warly move them to failure for now
+	    
+	    foreach my $rpm (@{$ent->{rpms}}) {
+		my $file = "$done_dir/${prefix}_$rpm";
+		plog('DEBUG', "moving built rpm $file to $fail_dir/${prefix}_$rpm");
+		link $file, "$fail_dir/${prefix}_$rpm";
 		unlink $file;
 	    }
-	}
-	
-	# Notify user if build failed
-	#
-	if ($user) {
-	    my $text = "Build of the following packages failed:\n\n";
-	    my $srpms = "";
-	    foreach my $srpm (@{$ent->{srpms}}) {
-		$srpms .= "$srpm ";
-		$text .= "- $srpm\n";
-	    }
-
-	    my $to = get_author_email($user) || "Unknown <$config->{admin}>";
-	    my $cc = undef;
-	    my $fpath = "$config->{http_queue}/failure/$path/$prefix";
-	    $fpath =~ tr!/!!s;	# Squash double slashes ...
-	    $fpath =~ s!/!//!;	# ... except for http://
-
-	    $text .= "\nFailure details available in $fpath/log\n";
-	    $text .= "Reason:\n";
-	    $text .= read_file("$fail_dir/$prefix/log/status.log");
-	    $text .= "\nLog files generated:\n";
-
-	    opendir my $DP1, "$fail_dir/$prefix/log/";
-	    foreach my $f1 (readdir $DP1) {
-		if (! -d "$fail_dir/$prefix/log/$f1" or $f1 =~ m/^\./) {
-		    next;
+	    # Should clean the queue 
+	    # Must remove the SRPM and the lock 
+	    foreach my $srpm (@{$ent->{srpms}}) {                                
+		my $file = "$todo_dir/${prefix}_$srpm";
+		plog('DEBUG', "moving $file to $fail_dir/${prefix}_$srpm");
+		link $file, "$fail_dir/${prefix}_$srpm";
+		delete $pkg_tree{$prefix};
+		unlink $file;
+		# If one arch has been generated, we also have a src.rpm in done
+		$file = "$done_dir/${prefix}_$srpm";
+		if (-f $file) {
+		    plog('DEBUG', "deleting $file");
+		    unlink $file;
 		}
+	    }
+	    
+	    # Notify user if build failed
+	    #
+	    if ($user) {
+		my $text = "Build of the following packages failed:\n\n";
+		my $srpms = "";
+		foreach my $srpm (@{$ent->{srpms}}) {
+		    $srpms .= "$srpm ";
+		    $text .= "- $srpm\n";
+		}
+		
+		my $to = get_author_email($user) || "Unknown <$config->{admin}>";
+		my $cc = undef;
+		my $fpath = "$config->{http_queue}/failure/$path/$prefix";
+		$fpath =~ tr!/!!s;	# Squash double slashes ...
+		$fpath =~ s!/!//!;	# ... except for http://
 
-		opendir my $DP2, "$fail_dir/$prefix/log/$f1";
-		foreach my $f2 (readdir $DP2) {
-		    if ($f2 =~ m/^\./) {
+		$text .= "\nFailure details available in $fpath/log\n";
+		$text .= "Reason:\n";
+		$text .= read_file("$fail_dir/$prefix/log/status.log");
+		$text .= "\nLog files generated:\n";
+		
+		opendir my $DP1, "$fail_dir/$prefix/log/";
+		foreach my $f1 (readdir $DP1) {
+		    if (! -d "$fail_dir/$prefix/log/$f1" or $f1 =~ m/^\./) {
 			next;
 		    }
-		    $text .= "$fpath/log/$f1/$f2\n";
+		    
+		    opendir my $DP2, "$fail_dir/$prefix/log/$f1";
+		    foreach my $f2 (readdir $DP2) {
+			if ($f2 =~ m/^\./) {
+			    next;
+			}
+			$text .= "$fpath/log/$f1/$f2\n";
+		    }
+		    closedir $DP2;
 		}
-		closedir $DP2;
+		closedir $DP1;
+		
+		sendmail($to, $cc,
+			 "Rebuild failed on $arch for $srpms", $text,
+			 "Ulri the scheduler bot <$config->{admin}>", 0);
 	    }
-	    closedir $DP1;
-
-	    sendmail($to, $cc,
-			"Rebuild failed on $arch for $srpms", $text,
-			"Ulri the scheduler bot <$config->{admin}>", 0);
-	}
-
-	# clean the log on the compilation machine
-	ssh($remote, "rm -rf $prefix_dir");
-
-    } # end bot
+	    
+	    # clean the log on the compilation machine
+	    ssh($remote, "rm -rf $prefix_dir");
+	    
+	} # end bot
     } # end path
 } # end prefix
 
@@ -555,180 +555,180 @@ foreach my $prefix (sort keys %pkg_tree) {
     my $ent = $pkg_tree{$prefix};
     foreach my $media (keys %{$ent->{media}}) {
 	my $path = $ent->{media}{$media}{path};
-    my $target = $ent->{target};
-    my $srpms = $ent->{srpms} or next;
-    
-    my $user = get_author_email($ent->{user}) || $config->{packager};
-    $user =~ s/([<>])/\\$1/g;
-
-    # Local pathnames
-    my $done_dir = "$done/$path";
-    my $todo_dir = "$todo/$path";
-
-    # Make sure these exist
-    make_path($done_dir);
-    make_path($todo_dir);
-
-    #plog('DEBUG', "searching a bot to compile @$srpms");
-
-    # count noarch todos only once even if searching multiple bots
-    my $noarch_countflag = 0;
-
-    # need to find a bot for each arch
-    foreach my $arch (keys %{$config->{bot}}) {
-	my $exclude;
-
-	# Skip this arch if package is building as noarch
-	#
-	next if $noarch_build{$prefix};
-
-	next if $compildone->{$prefix}{$media}{noarch};
-	next if $compildone->{$prefix}{$media}{$arch};
-
-	# If all packages in a group are noarch, consider the entire group
-	# as noarch
-	#
-	my $noarch = 1;
-	foreach my $srpm (@$srpms) {
-	    if (!check_noarch("$todo_dir/${prefix}_$srpm")) {
-		$noarch = 0;
-		last;
-	    }
-	}
-
-	#plog("@$srpms is noarch") if $noarch;
-
-	foreach my $srpm (@$srpms) {
-	    if (!check_arch("$todo_dir/${prefix}_$srpm", $arch)) {
-		plog('WARN', "excluding from $arch: $srpm");
-		$exclude = 1;
-		last;
-	    }
-	}
-
-	if ($exclude) {
-	    create_file("$done_dir/${prefix}_$arch.excluded",
-					"ulri $arch excluded");
-	    next;
-	}
-
-	if ($noarch) {
-	    plog('DEBUG', "search any bot for @$srpms") unless $noarch_countflag;
-	} else {
-	    plog('DEBUG', "search $arch bot for @$srpms");
-	}
-
-	foreach my $host (keys %{$config->{bot}{$arch}}) {
-	    foreach my $bot (keys %{$config->{bot}{$arch}{$host}}) {
-		next if $run{bot}{$host}{$bot};
-
-		# Enable noarch lock after the first bot snarfs the package
-		#
-	        $noarch_build{$prefix} = 1 if $noarch;
-
-		plog('INFO', "building on $host/$arch ($bot)");
-
-		$run{bot}{$host}{$bot} = $prefix;
-		$compildone->{$prefix}{$media}{$arch} = 1;
-
-		my $bot_conf = $config->{bot}{$arch}{$host}{$bot};
-        	my $remote = ssh_setup($config->{ssh_options},
-					$bot_conf->{user}, $host);
-
-		my $prefix_dir = "$bot_conf->{packages}/$path/$prefix/";
-		my $status_file = "$prefix_dir/log/status.log";
-
-		# Copy packages to build node
-		#
-		# create also the log dir for botcmd.log
-		next if ssh($remote, "mkdir -p $prefix_dir/log");
-		my $pkgs = "";
-		my $ok = 1;
-		foreach my $srpm (@$srpms) {
-		    plog('NOTIFY', "Send to $host/$arch: $srpm");
-		    $ok &&= !sput($remote, "$todo_dir/${prefix}_$srpm",
-					"$prefix_dir/$srpm");
-		    $pkgs .= " $prefix_dir/$srpm";
-		}
-		next unless $ok;
-
-		# spawn remote build bot and save output on local file
-		# (remove status.log before building, otherwise we can have
-		# a install_deps_failure and reschedule even if the package
-		# is currently building)
-		#
-		plog('DEBUG', "remove status file");
-		ssh($remote, "rm $status_file 2>/dev/null");
-
-		plog('INFO', "Execute build command on $host/$arch");
-
-		my $temp = mktemp("$config->{tmp}/ulri.tmp.$prefix.XXXXX");
-		my $cmd = $bot_conf->{command};
-		$cmd =~ s!__ARCH__!$arch!g;
-		$cmd =~ s!__DIR__!$path/$prefix!g;
-		$cmd =~ s!__TARGET__!$target!g;
-		$cmd =~ s!__PACKAGER__!$user!g;
-
-		my $media_to_add;
-		if (ref $config->{media}{$target}{$media}) {
-		    $media_to_add = join ' ', @{$config->{media}{$target}{$media}};
-		} elsif (ref $config->{media}{default}{$media}) { 
-		    $media_to_add = join ' ', @{$config->{media}{default}{$media}};
-		}
-		plog('DEBUG', "Will compile only with media $media_to_add");
-		$cmd =~ s!__MEDIA__!$media_to_add!g;
-
-		#- allow x86_64 hosts to build i586 packages
-		if ($arch eq 'i586') {
-		    $cmd = "setarch i586 $cmd";
-		}
-
-		plog('DEBUG', "Build $pkgs");
-		ssh($remote, "\'echo PID=\$\$; exec $cmd $pkgs &>$prefix_dir/log/botcmd.\$(date +%s).\$(hostname -s).log\' > $temp &");
-
-		# wait 10 seconds or until we have the log file
-		# plus 20 seconds if it timeouts.
-		#
-		if (check_file_timeout($temp, 10)) {
-		    plog('WARN', "Timeout waiting for building start. Waiting more 20s.");
-		    if (check_file_timeout($temp, 20)) {
-			plog('WARN', "Timeout! Abandoning the build.");
-			last;
-		    }
-		}
-
-		# get remote PID from log file
-		#
-		my $pid = get_pid_from_file($temp);
-		unlink $temp;
-		plog('DEBUG', "remote pid $pid");
-		if (!$pid) {
-		    plog('WARN', "pid is unknown, abandoning the build.");
+	my $target = $ent->{target};
+	my $srpms = $ent->{srpms} or next;
+	
+	my $user = get_author_email($ent->{user}) || $config->{packager};
+	$user =~ s/([<>])/\\$1/g;
+	
+	# Local pathnames
+	my $done_dir = "$done/$path";
+	my $todo_dir = "$todo/$path";
+	
+	# Make sure these exist
+	make_path($done_dir);
+	make_path($todo_dir);
+	
+	#plog('DEBUG', "searching a bot to compile @$srpms");
+	
+	# count noarch todos only once even if searching multiple bots
+	my $noarch_countflag = 0;
+	
+	# need to find a bot for each arch
+	foreach my $arch (keys %{$config->{bot}}) {
+	    my $exclude;
+	    
+	    # Skip this arch if package is building as noarch
+	    #
+	    next if $noarch_build{$prefix};
+	    
+	    next if $compildone->{$prefix}{$media}{noarch};
+	    next if $compildone->{$prefix}{$media}{$arch};
+	    
+	    # If all packages in a group are noarch, consider the entire group
+	    # as noarch
+	    #
+	    my $noarch = 1;
+	    foreach my $srpm (@$srpms) {
+		if (!check_noarch("$todo_dir/${prefix}_$srpm")) {
+		    $noarch = 0;
 		    last;
 		}
-
-		# create lock file
-		#
-		my $lock_arch = $noarch ? "$arch-noarch" : $arch;
-		my $lock_file = "$todo_dir/${prefix}_" .
-				"$lock_arch.$bot.$host.$fulldate.$pid.lock";
-		plog('DEBUG', "create lock $lock_file");
-		create_file($lock_file, "$program_name $$", time());
-
-		last;
 	    }
-	    last if $compildone->{$prefix}{$media}{$arch}; 
-	    last if $compildone->{$prefix}{$media}{noarch}; 
-	}
-
-	# Count packages to compile for each architecture. Count noarch
-	# package only once.
-	#
-	$arch = 'noarch' if $noarch;
-	unless ($compildone->{$prefix}{$media}{$arch}) { 
-	    $to_compile{$arch}++ if !($noarch && $noarch_countflag);
-	}
-	$noarch_countflag = 1 if $noarch;
+	    
+	    #plog("@$srpms is noarch") if $noarch;
+	    
+	    foreach my $srpm (@$srpms) {
+		if (!check_arch("$todo_dir/${prefix}_$srpm", $arch)) {
+		    plog('WARN', "excluding from $arch: $srpm");
+		    $exclude = 1;
+		    last;
+		}
+	    }
+	    
+	    if ($exclude) {
+		create_file("$done_dir/${prefix}_$arch.excluded",
+			    "ulri $arch excluded");
+		next;
+	    }
+	    
+	    if ($noarch) {
+		plog('DEBUG', "search any bot for @$srpms") unless $noarch_countflag;
+	    } else {
+		plog('DEBUG', "search $arch bot for @$srpms");
+	    }
+	    
+	    foreach my $host (keys %{$config->{bot}{$arch}}) {
+		foreach my $bot (keys %{$config->{bot}{$arch}{$host}}) {
+		    next if $run{bot}{$host}{$bot};
+		    
+		    # Enable noarch lock after the first bot snarfs the package
+		    #
+		    $noarch_build{$prefix} = 1 if $noarch;
+		    
+		    plog('INFO', "building on $host/$arch ($bot)");
+		    
+		    $run{bot}{$host}{$bot} = $prefix;
+		    $compildone->{$prefix}{$media}{$arch} = 1;
+		    
+		    my $bot_conf = $config->{bot}{$arch}{$host}{$bot};
+		    my $remote = ssh_setup($config->{ssh_options},
+					   $bot_conf->{user}, $host);
+		    
+		    my $prefix_dir = "$bot_conf->{packages}/$path/$prefix/";
+		    my $status_file = "$prefix_dir/log/status.log";
+		    
+		    # Copy packages to build node
+		    #
+		    # create also the log dir for botcmd.log
+		    next if ssh($remote, "mkdir -p $prefix_dir/log");
+		    my $pkgs = "";
+		    my $ok = 1;
+		    foreach my $srpm (@$srpms) {
+			plog('NOTIFY', "Send to $host/$arch: $srpm");
+			$ok &&= !sput($remote, "$todo_dir/${prefix}_$srpm",
+				      "$prefix_dir/$srpm");
+			$pkgs .= " $prefix_dir/$srpm";
+		    }
+		    next unless $ok;
+		    
+		    # spawn remote build bot and save output on local file
+		    # (remove status.log before building, otherwise we can have
+		    # a install_deps_failure and reschedule even if the package
+		    # is currently building)
+		    #
+		    plog('DEBUG', "remove status file");
+		    ssh($remote, "rm $status_file 2>/dev/null");
+		    
+		    plog('INFO', "Execute build command on $host/$arch");
+		    
+		    my $temp = mktemp("$config->{tmp}/ulri.tmp.$prefix.XXXXX");
+		    my $cmd = $bot_conf->{command};
+		    $cmd =~ s!__ARCH__!$arch!g;
+		    $cmd =~ s!__DIR__!$path/$prefix!g;
+		    $cmd =~ s!__TARGET__!$target!g;
+		    $cmd =~ s!__PACKAGER__!$user!g;
+		    
+		    my $media_to_add;
+		    if (ref $config->{media}{$target}{$media}) {
+			$media_to_add = join ' ', @{$config->{media}{$target}{$media}};
+		    } elsif (ref $config->{media}{default}{$media}) { 
+			$media_to_add = join ' ', @{$config->{media}{default}{$media}};
+		    }
+		    plog('DEBUG', "Will compile only with media $media_to_add");
+		    $cmd =~ s!__MEDIA__!$media_to_add!g;
+		    
+		    #- allow x86_64 hosts to build i586 packages
+		    if ($arch eq 'i586') {
+			$cmd = "setarch i586 $cmd";
+		    }
+		    
+		    plog('DEBUG', "Build $pkgs");
+		    ssh($remote, "\'echo PID=\$\$; exec $cmd $pkgs &>$prefix_dir/log/botcmd.\$(date +%s).\$(hostname -s).log\' > $temp &");
+		    
+		    # wait 10 seconds or until we have the log file
+		    # plus 20 seconds if it timeouts.
+		    #
+		    if (check_file_timeout($temp, 10)) {
+			plog('WARN', "Timeout waiting for building start. Waiting more 20s.");
+			if (check_file_timeout($temp, 20)) {
+			    plog('WARN', "Timeout! Abandoning the build.");
+			    last;
+			}
+		    }
+		    
+		    # get remote PID from log file
+		    #
+		    my $pid = get_pid_from_file($temp);
+		    unlink $temp;
+		    plog('DEBUG', "remote pid $pid");
+		    if (!$pid) {
+			plog('WARN', "pid is unknown, abandoning the build.");
+			last;
+		    }
+		    
+		    # create lock file
+		    #
+		    my $lock_arch = $noarch ? "$arch-noarch" : $arch;
+		    my $lock_file = "$todo_dir/${prefix}_" .
+			"$lock_arch.$bot.$host.$fulldate.$pid.lock";
+		    plog('DEBUG', "create lock $lock_file");
+		    create_file($lock_file, "$program_name $$", time());
+		    
+		    last;
+		}
+		last if $compildone->{$prefix}{$media}{$arch}; 
+		last if $compildone->{$prefix}{$media}{noarch}; 
+	    }
+	    
+	    # Count packages to compile for each architecture. Count noarch
+	    # package only once.
+	    #
+	    $arch = 'noarch' if $noarch;
+	    unless ($compildone->{$prefix}{$media}{$arch}) { 
+		$to_compile{$arch}++ if !($noarch && $noarch_countflag);
+	    }
+	    $noarch_countflag = 1 if $noarch;
 	}
     }
 }
