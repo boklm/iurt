@@ -239,7 +239,7 @@ sub todo_func {
 
 	my $time = read_line("$todo/$f/$m/$s/$r");
 	$time = (split ' ', $time)[2];
-	push @{$pkg_tree{$prefix}{bot}}, {
+	push @{$pkg_tree{$prefix}{media}{$media}{bot}}, {
 	    bot => $bot,
 	    host => $host,
 	    date => $date,
