@@ -201,12 +201,13 @@ plog('DEBUG', "input queue is $todo");
 sub todo_func {
     my ($todo, $f, $m, $s, $r) = @_;
 
+    my $media = "$m/$s";
+
     if ($r =~ /(\d{14}\.(\w+)\.\w+\.\d+)_(.*\.src\.rpm)$/) {
 	my ($prefix, $user, $srpm) = ($1, $2, $3);
 
 	plog('DEBUG', "found srpm $srpm ($prefix)");
-	$pkg_tree{$prefix}{path} = "/$f/$m/$s";
-	$pkg_tree{$prefix}{media} = "$m/$s";
+	$pkg_tree{$prefix}{media}{$media}{path} = "/$f/$m/$s";
 	$pkg_tree{$prefix}{target} = $f;
 	$pkg_tree{$prefix}{user} = $user;
 	push @{$pkg_tree{$prefix}{srpms}} , $srpm;
@@ -234,7 +235,7 @@ sub todo_func {
 	$run{bot}{$host}{$bot} = $prefix;
 
 	# this should be in the cache, but waiting for a cache-clean option
-	$compildone->{$prefix}{$arch} = 1;
+	$compildone->{$prefix}{$media}{$arch} = 1;
 
 	my $time = read_line("$todo/$f/$m/$s/$r");
 	$time = (split ' ', $time)[2];
@@ -261,12 +262,14 @@ sub todo_post {
 }
 
 sub done_func {
-    my ($_todo, $_f, $_m, $_s, $r) = @_;
+    my ($_todo, $_f, $m, $s, $r) = @_;
+
+    my $media = "$m/$s";
 
     if ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*)\.(done|fail|excluded)$/) {
 	my ($prefix, $arch) = ($1, $2);
 	$arch = $config->{arch_translation}{$arch} if $config->{arch_translation}{$arch};
-	$compildone->{$prefix}{$arch} = 1;
+	$compildone->{$prefix}{$media}{$arch} = 1;
     } elsif ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*\.([^.]+)\.rpm)$/) {
 	my ($prefix, $rpm) = ($1, $2);
 	plog('DEBUG', "found already built rpm $rpm ($prefix)");
@@ -292,7 +295,8 @@ plog('MSG', "check build bot results");
 my %later;
 foreach my $prefix (keys %pkg_tree) {
     my $ent = $pkg_tree{$prefix};
-    my $path = $ent->{path};
+    foreach my $media (keys %{$ent->{media}}) {
+    my $path = $ent->{media}{$media}{path};
     my $user = $ent->{user};
 
     # Local pathnames
@@ -300,7 +304,7 @@ foreach my $prefix (keys %pkg_tree) {
     my $todo_dir = "$todo/$path";
     my $fail_dir = "$failure/$path";
 
-    bot: foreach my $bot_list (@{$ent->{bot}}) {
+    bot: foreach my $bot_list (@{$ent->{media}{$media}{bot}}) {
 	my ($bot, $host, $date, $pid, $arch, $time) =
 			@$bot_list{qw(bot host date pid arch time)};
 
@@ -430,7 +434,7 @@ foreach my $prefix (keys %pkg_tree) {
 	if (!$ended && !$fail) {
 	    plog('FAIL', "$bot timed out on $host/$arch ($seconds sec) or " .
 			"it's dead (status $proc_state), removing lock");
-	    $compildone->{$prefix}{$arch} = 0;
+	    $compildone->{$prefix}{$media}{$arch} = 0;
 	    next bot;
 	}
 
@@ -452,7 +456,7 @@ foreach my $prefix (keys %pkg_tree) {
 	if (sget($remote, "$prefix_dir/", "$fail_dir/")) {
 	    plog('ERR', "copying from $host:$prefix_dir/ " .
 					"to $fail_dir/ failed ($!)");
-	    $compildone->{$prefix}{$arch} = 0;
+	    $compildone->{$prefix}{$media}{$arch} = 0;
 	    # clean the log on the compilation machine
 	    ssh($remote, "rm -rf $prefix_dir");
 	    next bot;
@@ -531,6 +535,7 @@ foreach my $prefix (keys %pkg_tree) {
 	ssh($remote, "rm -rf $prefix_dir");
 
     } # end bot
+    } # end path
 } # end prefix
 
 
@@ -546,9 +551,10 @@ my %to_compile;
 
 foreach my $prefix (sort keys %pkg_tree) {
     next if $later{$prefix};
+
     my $ent = $pkg_tree{$prefix};
-    my $path = $ent->{path};
-    my $media = $ent->{media};
+    foreach my $media (keys %{$ent->{media}}) {
+	my $path = $ent->{media}{$media}{path};
     my $target = $ent->{target};
     my $srpms = $ent->{srpms} or next;
     
@@ -576,8 +582,8 @@ foreach my $prefix (sort keys %pkg_tree) {
 	#
 	next if $noarch_build{$prefix};
 
-	next if $compildone->{$prefix}{noarch};
-	next if $compildone->{$prefix}{$arch};
+	next if $compildone->{$prefix}{$media}{noarch};
+	next if $compildone->{$prefix}{$media}{$arch};
 
 	# If all packages in a group are noarch, consider the entire group
 	# as noarch
@@ -623,7 +629,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 		plog('INFO', "building on $host/$arch ($bot)");
 
 		$run{bot}{$host}{$bot} = $prefix;
-		$compildone->{$prefix}{$arch} = 1;
+		$compildone->{$prefix}{$media}{$arch} = 1;
 
 		my $bot_conf = $config->{bot}{$arch}{$host}{$bot};
         	my $remote = ssh_setup($config->{ssh_options},
@@ -711,18 +717,19 @@ foreach my $prefix (sort keys %pkg_tree) {
 
 		last;
 	    }
-	    last if $compildone->{$prefix}{$arch}; 
-	    last if $compildone->{$prefix}{noarch}; 
+	    last if $compildone->{$prefix}{$media}{$arch}; 
+	    last if $compildone->{$prefix}{$media}{noarch}; 
 	}
 
 	# Count packages to compile for each architecture. Count noarch
 	# package only once.
 	#
 	$arch = 'noarch' if $noarch;
-	unless ($compildone->{$prefix}{$arch}) { 
+	unless ($compildone->{$prefix}{$media}{$arch}) { 
 	    $to_compile{$arch}++ if !($noarch && $noarch_countflag);
 	}
 	$noarch_countflag = 1 if $noarch;
+	}
     }
 }
 
