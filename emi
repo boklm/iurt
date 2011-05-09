@@ -173,9 +173,9 @@ foreach my $prefix (sort keys %pkg_tree) {
     plog('NOTIFY', "processing $prefix");
 
     my $ok = 1;
-    my $has_arched_packages = scalar(difference2([ keys %{$pkg_tree{$prefix}{arch}} ], [ qw(src noarch) ]));
 
     foreach my $section (keys %{$pkg_tree{$prefix}{section}}) {
+	my $has_arched_packages = scalar(difference2([ keys %{$pkg_tree{$prefix}{section}{$section}{arch}} ], [ qw(src noarch) ]));
 	my $path = $pkg_tree{$prefix}{section}{$section}{path};
 	my %missing;
 
@@ -183,7 +183,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 	foreach my $m (if_($has_arched_packages, @{$config->{mandatory_arch}}), 'src') {
 	    $excluded{$prefix}{$section}{$m} and next;
 	    my $x = "yes";
-	    if (!$pkg_tree{$prefix}{arch}{$m}) {
+	    if (!$pkg_tree{$prefix}{section}{$section}{arch}{$m}) {
 		$missing{$m} = 1;
 		$x = "no";
 		$ok = 0;
@@ -302,11 +302,11 @@ foreach my $target (keys %targets) {
 
 	foreach my $prefix (@{$targets{$target}{$section}{'to_upload'}}) {
 	    next if $is_finisher{$prefix};
-	    upload_prefix($prefix, $section);
+	    upload_prefix_in_section($prefix, $section);
 	}
 
 	foreach my $prefix (keys %is_finisher) {
-	    upload_prefix($prefix, $section, 1);
+	    upload_prefix_in_section($prefix, $section, 1);
 	}
     }
 }
