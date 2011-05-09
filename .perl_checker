@@ -1,8 +1,10 @@
 AutoLoader
 bytes
 Carp::Heavy
+Carp
 constant
 Compress::Zlib
+Cwd
 Encode
 Exporter::Heavy
 File::Basename
@@ -10,13 +12,16 @@ File::Copy
 File::GlobMapper
 File::NCopy
 File::Path
+File::Slurp
 File::Sync
 File::Temp
 IO::Compress::Gzip
 IO::Handle
 IO::Uncompress::Gunzip
+List::MoreUtils
 MDV::Distribconf::Build
 MIME::Words
 RPM4::Header
 Scalar::Util
 Text::Wrap
+XSLoader
