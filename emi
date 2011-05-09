@@ -210,15 +210,15 @@ foreach my $prefix (sort keys %pkg_tree) {
 	# We already have found universal finisher in that section, we're fine
 	next if exists $targets{$target}{$section}{'arch_finisher'}{'noarch'};
 
-	if ($pkg_tree{$prefix}{arch}{noarch}) {
+	if ($pkg_tree{$prefix}{section}{$section}{arch}{noarch}) {
 	    # This package is noarch, genhdlist for it will touch all archs
 	    $targets{$target}{$section}{'arch_finisher'} = { 'noarch' => $prefix };
 	} else {
-	    my $has_new_arch = scalar(difference2([ keys %{$pkg_tree{$prefix}{arch}} ], [ keys %{$targets{$target}{$section}{'arch_finisher'}} ]));
+	    my $has_new_arch = scalar(difference2([ keys %{$pkg_tree{$prefix}{section}{$section}{arch}} ], [ keys %{$targets{$target}{$section}{'arch_finisher'}} ]));
 	    if ($has_new_arch) {
 		# We need this package to cover the new arch
 		# Set it for all, it may allow getting rid of some others
-		foreach (keys %{$pkg_tree{$prefix}{arch}}) {
+		foreach (keys %{$pkg_tree{$prefix}{section}{$section}{arch}}) {
 		    $targets{$target}{$section}{'arch_finisher'}{$_} = $prefix;
 		}
 	    }
