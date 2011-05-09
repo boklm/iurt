@@ -110,9 +110,6 @@ $run{pidfile_home} = $config->{tmp};
 $run{pidfile} = "upload";
 my $pidfile = check_pid(\%run);
 
-my $cache =  { arch => {} };
-
-
 my $todo = "$config->{queue}/todo";
 my $done = "$config->{queue}/done";
 my $reject = "$config->{queue}/rejected";
@@ -128,29 +125,22 @@ my %excluded;
 sub done_func {
     my ($_todo, $f, $m, $s, $r) = @_;
 
-    my $media = "$m/$s";
+    my $section = "$m/$s";
 
     if ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*\.([^.]+)\.rpm)$/) {
 	my ($prefix, $rpm, $arch) = ($1, $2, $3);
 	$arch = $config->{arch_translation}{$arch} if $config->{arch_translation}{$arch};
-	plog('DEBUG', "found rpm $rpm ($prefix) for media $media");
-	$pkg_tree{$prefix}{path} = "/$f/$m/$s";
-	$pkg_tree{$prefix}{arch}{$arch} = 1;
+	plog('DEBUG', "found rpm $rpm ($prefix) for section $section");
 	$pkg_tree{$prefix}{target} = $f;
-	$pkg_tree{$prefix}{section} = "$m/$s";
-	push @{$pkg_tree{$prefix}{srpms}}, $rpm if $arch eq 'src';
-	push @{$pkg_tree{$prefix}{rpms}} , $rpm;
-    } elsif ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*)\.done$/) {
-	my ($prefix, $arch) = ($1, $2);
-	#plog("found .done ($prefix)");
-	$arch = $config->{arch_translation}{$arch} if $config->{arch_translation}{$arch};
-	$cache->{arch}{$prefix}{$arch} = 1;
+	$pkg_tree{$prefix}{section}{$section}{path} = "/$f/$m/$s";
+	$pkg_tree{$prefix}{section}{$section}{arch}{$arch} = 1;
+	push @{$pkg_tree{$prefix}{section}{$section}{srpms}}, $rpm if $arch eq 'src';
+	push @{$pkg_tree{$prefix}{section}{$section}{rpms}} , $rpm;
     } elsif ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*)\.excluded$/) {
 	my ($prefix, $arch) = ($1, $2);
 	$arch = $config->{arch_translation}{$arch} if $config->{arch_translation}{$arch};
 	plog('DEBUG', "found .excluded ($prefix)");
-	$cache->{arch}{$prefix}{$arch} = 1;
-	$excluded{$prefix}{$arch} = 1;
+	$excluded{$prefix}{$section}{$arch} = 1;
     }
 }
 
@@ -172,138 +162,126 @@ check_upload_tree(\%run, $todo, \&todo_func,);
 # Decide what should be uploaded
 #
 
-# $targets{$target}{'arch_finisher'}{$arch}: prefix on which we need to actions to get this arch updated
-# $targets{$target}{'to_upload'}: list of prefixes to upload
+# $targets{$target}{$section}{'arch_finisher'}{$arch}: prefix on which we need to actions to get this arch updated
+# $targets{$target}{$section}{'to_upload'}: list of prefixes to upload
 my %targets;
 
 foreach my $prefix (sort keys %pkg_tree) {
     my $target = $pkg_tree{$prefix}{target};
-    my $path = $pkg_tree{$prefix}{path};
-    my $section = $pkg_tree{$prefix}{section};
-    my %missing;
 
     plog('NOTIFY', "processing $prefix");
-    plog('DEBUG', "... in $path");
+
     my $ok = 1;
     my $has_arched_packages = scalar(difference2([ keys %{$pkg_tree{$prefix}{arch}} ], [ qw(src noarch) ]));
-    foreach my $m (if_($has_arched_packages, @{$config->{mandatory_arch}}), 'src') {
-	$excluded{$prefix}{$m} and next;
-	my $x = "yes";
-	if (!$pkg_tree{$prefix}{arch}{$m}) {
-	    if (!$cache->{arch}{$prefix}{$m}) {
+
+    foreach my $section (keys %{$pkg_tree{$prefix}{section}}) {
+	my $path = $pkg_tree{$prefix}{section}{$section}{path};
+	my %missing;
+
+	plog('DEBUG', "... in $path");
+	foreach my $m (if_($has_arched_packages, @{$config->{mandatory_arch}}), 'src') {
+	    $excluded{$prefix}{$section}{$m} and next;
+	    my $x = "yes";
+	    if (!$pkg_tree{$prefix}{arch}{$m}) {
 		$missing{$m} = 1;
 		$x = "no";
 		$ok = 0;
-	    } else {
-		$x = "yes (in cache)";
 	    }
+	    plog('INFO', " mandatory architecture $m present: $x");
 	}
-	plog('INFO', " mandatory architecture $m present: $x");
+	
+	unless ($ok) {
+	    plog('INFO', "mandatory arch", join(' ', keys %missing),
+				"missing for $section, waiting");
+	    next;
+	}
     }
-
-    unless ($ok) {
-	plog('INFO', "mandatory arch", join(' ', keys %missing),
-				"missing, waiting");
-	next;
-    }
-
+    next unless ($ok);
+    
     #
     # All mandatory archs found, mark for upload
     #
-    $targets{$target} ||= {'arch_finisher' => {}, 'is_finisher' => {}, 'to_upload' => []};
+    foreach my $section (keys %{$pkg_tree{$prefix}{section}}) {
+	$targets{$target}{$section} ||= {'arch_finisher' => {}, 'is_finisher' => {}, 'to_upload' => []};
 
-    push @{$targets{$target}{'to_upload'}}, $prefix;
+	push @{$targets{$target}{$section}{'to_upload'}}, $prefix;
 
-    # If we already have found universal finisher, we're fine
-    next if exists $targets{$target}{'arch_finisher'}{'noarch'};
+	# We already have found universal finisher in that section, we're fine
+	next if exists $targets{$target}{$section}{'arch_finisher'}{'noarch'};
 
-    if ($pkg_tree{$prefix}{arch}{noarch}) {
-	# This package is noarch, genhdlist for it will touch all archs
-        $targets{$target}{'arch_finisher'} = { 'noarch' => $prefix };
-    } else {
-        my $has_new_arch = scalar(difference2([ keys %{$pkg_tree{$prefix}{arch}} ], [ keys %{$targets{$target}{'arch_finisher'}} ]));
-	if ($has_new_arch) {
-	    # We need this package to cover the new arch
-	    # Set it for all, it may allow getting rid of some others
-	    foreach (keys %{$pkg_tree{$prefix}{arch}}) {
-		$targets{$target}{'arch_finisher'}{$_} = $prefix;
+	if ($pkg_tree{$prefix}{arch}{noarch}) {
+	    # This package is noarch, genhdlist for it will touch all archs
+	    $targets{$target}{$section}{'arch_finisher'} = { 'noarch' => $prefix };
+	} else {
+	    my $has_new_arch = scalar(difference2([ keys %{$pkg_tree{$prefix}{arch}} ], [ keys %{$targets{$target}{$section}{'arch_finisher'}} ]));
+	    if ($has_new_arch) {
+		# We need this package to cover the new arch
+		# Set it for all, it may allow getting rid of some others
+		foreach (keys %{$pkg_tree{$prefix}{arch}}) {
+		    $targets{$target}{$section}{'arch_finisher'}{$_} = $prefix;
+		}
 	    }
 	}
     }
 }
 
-sub upload_prefix {
-    my ($prefix, $finish) = @_;
+sub upload_prefix_in_section {
+    my ($prefix, $section, $finish) = @_;
     my @packages;
     my ($user) = $prefix =~ /\d{14}\.(\w+)\.\w+\.\d+$/;
     my $target = $pkg_tree{$prefix}{target};
-    my $path = $pkg_tree{$prefix}{path};
-    my $section = $pkg_tree{$prefix}{section};
 
+    my $path = $pkg_tree{$prefix}{section}{$section}{path};
+    
     plog('OK', "all archs done: $prefix");
-    foreach my $rpm (@{$pkg_tree{$prefix}{rpms}}) {
+    foreach my $rpm (@{$pkg_tree{$prefix}{section}{$section}{rpms}}) {
 	push @packages, "$done/$path/${prefix}_$rpm";
-        plog('OK', " uploading $rpm in $done/$path");
+	plog('OK', " uploading $rpm in $done/$path");
     }
-
+    
     $user ||= $config->{upload_user};
     # FIXME we want to skip all post, we should not hardcode them here
     my $skip = $finish ? "" : "--skip-post genhdlist2 --skip-post mirror --skip-post clean_rpmsrate";
     my $command = "/usr/bin/perl -I/usr/share/mga-youri-submit/lib /usr/share/mga-youri-submit/bin/youri-submit --verbose --config /etc/youri/submit-upload.conf --define user=$user --define prefix=$prefix --define section=$section $skip $target @packages &> $done/$path/$prefix.youri";
-
+    
     plog('DEBUG', "running $command");
     if (!system($command)) {
 	plog('INFO', "upload succeeded");
-
-	# now check if we need to keep the current srpm in todo
-	my $all_uploaded = 1;
-
-	foreach my $arch (@{$config->{arch}}) {
-	    if (!$cache->{arch}{$prefix}{$arch}) {
-		$all_uploaded = 0;
-	    }
-	}
-
-	if ($all_uploaded) {
-	    plog("cleaning upload tree for $prefix");
-	    # remove srpm
-	    # remove lock
-	}
     } else {
 	# should send a mail or something
 	plog('ERR', "upload failed ($!), rejecting files in $reject/$path/");
 	make_path("$reject/$path");
-	foreach my $rpm (@{$pkg_tree{$prefix}{rpms}}) {
+	foreach my $rpm (@{$pkg_tree{$prefix}{section}{$section}{rpms}}) {
 	    link "$done/$path/${prefix}_$rpm", "$reject/$path/${prefix}_$rpm";
 	    plog('ERR', "ERROR: link of $rpm failed ($!)");
 	}
 	link "$done/$path/$prefix.youri", "$reject/$path/$prefix.youri";
-
+	
 	my ($user) = $prefix =~ /\d{14}\.(\w+)\.\w+\.\d+/;
 	if ($user) {
 	    my $text = qq(The upload of the following packages failed:\n);
 	    my $rpms;
-	    foreach my $rpm (@{$pkg_tree{$prefix}{rpms}}) {
-		$rpm =~ /src\.rpm$/ or next;
-		$rpms .= "$rpm ";
-		$text .= "- $rpm\n";
+	    foreach my $rpm (@{$pkg_tree{$prefix}{section}{$section}{rpms}}) {
+		    $rpm =~ /src\.rpm$/ or next;
+		    $rpms .= "$rpm ";
+		    $text .= "- $rpm\n";
 	    }
 	    my $to =  get_author_email($user) || "Unknown <$config->{admin}>";
 	    my $cc;
 	    $text .= "\nUpload log available in $config->{http_queue}/rejected/$path/$prefix.youri\n";
-
+	    
 	    sendmail($to, $cc, "Upload failed for $rpms", $text, "Emi the upload bot <$config->{admin}>", 0);
 	}
-
+	
 	# should delete the files
     }
 
     # delete the files which should have heen either put in queue or rejected
     unlink $_ foreach @packages;
-
+    
     # keep the log file for debugging
     # unlink "$done/$path/$prefix.youri";
-
+    
     # unlink the sources rpm, other arch will be able to grab it into
     # the repository
     foreach (@{$pkg_tree{$prefix}{todo}}) {
@@ -314,17 +292,21 @@ sub upload_prefix {
 
 foreach my $target (keys %targets) {
     my %is_finisher;
-    foreach (values %{$targets{$target}{'arch_finisher'}}) {
-	$is_finisher{$_} = 1;
-    }
 
-    foreach my $prefix (@{$targets{$target}{'to_upload'}}) {
-	next if $is_finisher{$prefix};
-	upload_prefix($prefix);
-    }
+    foreach my $section (keys %{$targets{$target}}) {
+	
+	foreach (values %{$targets{$target}{$section}{'arch_finisher'}}) {
+	    $is_finisher{$_} = 1;
+	}
 
-    foreach my $prefix (keys %is_finisher) {
-	upload_prefix($prefix, 1);
+	foreach my $prefix (@{$targets{$target}{$section}{'to_upload'}}) {
+	    next if $is_finisher{$prefix};
+	    upload_prefix($prefix, $section);
+	}
+
+	foreach my $prefix (keys %is_finisher) {
+	    upload_prefix($prefix, $section, 1);
+	}
     }
 }
 
