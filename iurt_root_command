@@ -35,7 +35,7 @@ my (@params, %run);
 $run{program_name} = $program_name;
 
 my %authorized_modules = ('unionfs' => 1);
-my %authorized_rw_bindmounts = ( map { $_ => 1 } qw(/proc /dev/pts /var/cache/icecream) );
+my %authorized_rw_bindmounts = (map { $_ => 1 } qw(/proc /dev/pts /var/cache/icecream));
 
 $run{todo} = [];
 @params = ( 

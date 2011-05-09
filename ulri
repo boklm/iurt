@@ -499,7 +499,7 @@ foreach my $prefix (keys %pkg_tree) {
 		}
 		
 		my $to = get_author_email($user) || "Unknown <$config->{admin}>";
-		my $cc = undef;
+		my $cc;
 		my $fpath = "$config->{http_queue}/failure/$path/$prefix";
 		$fpath =~ tr!/!!s;	# Squash double slashes ...
 		$fpath =~ s!/!//!;	# ... except for http://
@@ -511,7 +511,7 @@ foreach my $prefix (keys %pkg_tree) {
 		
 		opendir my $DP1, "$fail_dir/$prefix/log/";
 		foreach my $f1 (readdir $DP1) {
-		    if (! -d "$fail_dir/$prefix/log/$f1" or $f1 =~ m/^\./) {
+		    if (! -d "$fail_dir/$prefix/log/$f1" || $f1 =~ m/^\./) {
 			next;
 		    }
 		    
@@ -684,7 +684,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 		    }
 		    
 		    plog('DEBUG', "Build $pkgs");
-		    ssh($remote, "\'echo PID=\$\$; exec $cmd $pkgs &>$prefix_dir/log/botcmd.\$(date +%s).\$(hostname -s).log\' > $temp &");
+		    ssh($remote, "'echo PID=\$\$; exec $cmd $pkgs &>$prefix_dir/log/botcmd.\$(date +%s).\$(hostname -s).log' > $temp &");
 		    
 		    # wait 10 seconds or until we have the log file
 		    # plus 20 seconds if it timeouts.
