@@ -33,7 +33,7 @@
 
 use strict;
 use RPM4::Header;
-use Iurt::Config qw(config_usage get_date get_prefix config_init dump_cache_par get_maint get_date check_arch %arch_comp get_package_prefix);
+use Iurt::Config qw(config_usage get_date get_prefix config_init dump_cache_par get_maint check_arch %arch_comp get_package_prefix);
 use Data::Dumper;
 use URPM;
 use Iurt::DKMS;
