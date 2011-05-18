@@ -37,6 +37,7 @@ use Iurt::Config qw(config_usage get_date get_prefix config_init dump_cache_par 
 use Data::Dumper;
 use URPM;
 use Iurt::DKMS;
+use lib '/home/iurt/';
 use Iurt::Urpmi;
 use Iurt::Chroot qw(add_local_user create_temp_chroot remove_chroot clean_unionfs clean_all_unionfs clean_all_chroot_tmp check_build_chroot clean_chroot);
 use Iurt::Process qw(perform_command clean kill_for_good sudo);
@@ -94,6 +95,7 @@ $run{todo} = [];
  	    [--use-system-distrib] [--dir] [--help foo?] [--log filename] [--group] [--unionfs]
  	    [--upload [--markrelease] [--source]] [--dir] [--help foo?] [--log filename]  [--unionfs] [--status] [--ignore-failure]
 	    [--repository <distribution path>]
+	    [--rpmmacros <macro definition> [<macro definition>...]]
  	    {--config_help | --dkms {--media <media regexp>}
 	    --chroot --arch {i586|x86_64|ppc} --distro {cooker|2006.0|community/2006.0|...} } |
  	    --build-user <user> --rebuild {cooker|2006.0|community/2006.0|...} {i586|x86_64|ppc|...} {filename1.src.rpm} {filename2.src.rpm} ... {filenamen.src.rpm} }", 
@@ -245,6 +247,9 @@ $run{todo} = [];
 	}
 	1;
 	}, "Activating rebuild mode" ],
+    [ "", "rpmmacros", -1, "<macro definition 1> .. <macro definition n>", 
+    "Additional rpm macros to define",
+    sub { $run{rpmmacros} = \@_ }, 'Setting rpm macros' ],
     [ "", "upload", [
 	["", "upload", 0, "[options]", 
 	"Upload the rebuild packages", 

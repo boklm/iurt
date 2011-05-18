@@ -164,7 +164,9 @@ sub dump_rpmmacros {
 \%_tmppath               \%(echo \$HOME)/rpm/tmp/
 \%distribution           $config->{distribution}
 \%vendor                 $config->{vendor}
-\%packager               $packager);
+\%packager               $packager
+);
+    print $f join "\n", @{$run->{rpmmacros}} if defined $run->{rpmmacros};
     close $f;
 
     my $ret = sudo($run, $config, '--cp', $tmpfile, $file);
