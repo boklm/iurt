@@ -37,7 +37,7 @@ use Iurt::Config qw(config_usage get_date get_prefix config_init dump_cache_par 
 use Data::Dumper;
 use URPM;
 use Iurt::DKMS;
-use lib '/home/iurt/';
+
 use Iurt::Urpmi;
 use Iurt::Chroot qw(add_local_user create_temp_chroot remove_chroot clean_unionfs clean_all_unionfs clean_all_chroot_tmp check_build_chroot clean_chroot);
 use Iurt::Process qw(perform_command clean kill_for_good sudo);
