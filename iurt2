@@ -411,7 +411,7 @@ if (!$config->{repository}) {
     die "FATAL $program_name: no repository have been defined (use --repository to specify one on the command line";
 }
 
-my $urpmi = Iurt::Urpmi->new(run => \%run, config => $config, urpmi_options => "-v --no-verify-rpm --nolock --auto --ignoresize $config->{urpmi_options}");
+my $urpmi = Iurt::Urpmi->new(run => \%run, config => $config, urpmi_options => "-v --no-verify-rpm --nolock --auto --no-suggests --ignoresize $config->{urpmi_options}");
 $run{urpmi} = $urpmi;
 
 if (!$run{chrooted_urpmi} && $run{group}) {
