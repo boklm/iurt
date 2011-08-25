@@ -1,9 +1,7 @@
 
 NAME=iurt
 PACKAGE=$(NAME)
-VERSION := $(shell rpm -q --qf '%{version}\n' --specfile $(NAME).spec | head -1)
-RELEASE := $(shell rpm -q --qf '%{release}\n' --specfile $(NAME).spec | head -1)
-RELTAG := $(shell echo "V$(VERSION)_$(RELEASE)" | tr -- '-.' '__')
+VERSION=0.6.5
 
 FILES= Makefile emi iurt.spec iurt2 iurt_root_command lib ulri 
 RPM=$(HOME)/rpm
