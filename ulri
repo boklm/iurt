@@ -669,7 +669,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 		    $cmd =~ s!__TARGET__!$target!g;
 		    $cmd =~ s!__PACKAGER__!$user!g;
 		    my $section = $media;
-		    $section =~ s!/.*\$!!;
+		    $section =~ s!/.*$!!;
 		    $cmd =~ s!__SECTION__!$section!g;
 		    
 		    my $media_to_add;
