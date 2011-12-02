@@ -454,7 +454,8 @@ foreach my $prefix (keys %pkg_tree) {
 	    create_file("$done_dir/${prefix}_$arch.fail", "$bot $host");
 	    make_path($fail_dir);
 	    
-	    if (sget($remote, "$prefix_dir/", "$fail_dir/")) {
+	    mkdir("$fail_dir/$prefix"); 
+	    if (sget($remote, "$prefix_dir/*", "$fail_dir/$prefix")) {
 		plog('ERR', "copying from $host:$prefix_dir/ " .
 		     "to $fail_dir/ failed ($!)");
 		$compildone->{$prefix}{$media}{$arch} = 0;
