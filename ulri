@@ -312,6 +312,8 @@ foreach my $prefix (keys %pkg_tree) {
             my $remote = ssh_setup($config->{ssh_options},
 				   $bot_conf->{user}, $host);
 	    
+	    my $prefix_dir = "$bot_conf->{packages}/$path/$prefix-$arch/";
+
 	    # If our build is noarch, set arch appropriately.
 	    #
 	    my $lock_file =
@@ -324,7 +326,6 @@ foreach my $prefix (keys %pkg_tree) {
 	        $lock_file =~ s/-noarch//;
 	    }
 	    
-	    my $prefix_dir = "$bot_conf->{packages}/$path/$prefix-$arch/";
 	    my $status_file = "$prefix_dir/log/status.log";
 
 	    plog('INFO', "check status: $host/$arch ($bot [$pid])");
