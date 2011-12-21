@@ -29,6 +29,7 @@ use Iurt::Util qw(plog_init plog);
 use Cwd 'realpath';
 use File::Path qw(make_path);
 use File::Slurp;
+use String::Escape;
 
 my $arg = @ARGV;
 my (@params, %run);
@@ -47,7 +48,7 @@ $run{todo} = [];
 		    [--modprobe <module>] 
 		    [--mkdir [--parents] <dir1> <dir2> ... <dirn>]", 
     "$program_name is a perl script to execute commands which need root privilege, it helps probram which needs occasional root privileges for some commands.", 
-    sub { $arg or usage($program_name, \@params) }, "Running $program_name" ],
+    sub { $arg or usage($program_name, \@params) }, String::Escape::elide(join(' ', "Running $program_name", @ARGV), 120) ],
 
     [ "", "cp", [
     ["", "cp", -1, "[-r] <file1> <file2> ... <filen> <dest>", "copy the files to dest",
