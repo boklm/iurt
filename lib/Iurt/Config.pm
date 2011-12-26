@@ -237,10 +237,11 @@ sub get_maint {
     if ($run->{maint}{$srpm}) {
 	return $run->{maint}{$srpm}, $srpm_name;
     }
-    my $maint = `GET 'http://maintainers.mandriva.com/lookup.php?pkg=$srpm_name'`;
+    my $maint = `GET 'http://maintdb.mageia.org/$srpm_name'`;
     chomp $maint;
-    $run->{maint}{$srpm} = $maint;
-    $maint, $srpm_name;
+    my $email_maint = $maint . '@mageia.org';
+    $run->{maint}{$srpm} = $email_maint;
+    $email_maint, $srpm_name;
 }
 
 # TODO: would be nicer (really?) to use repsys configuration directly, and
