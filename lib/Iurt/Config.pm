@@ -246,7 +246,7 @@ sub get_maint {
 
 sub get_author_email {
     my ($user) = @_;
-    my $authoremail = $user . ' <' . $user . '@mageia.org>';
+    my $authoremail = $user . ' <' . $user . '>';
 
     return $authoremail;
 }
