@@ -244,12 +244,9 @@ sub get_maint {
     $email_maint, $srpm_name;
 }
 
-# TODO: would be nicer (really?) to use repsys configuration directly, and
-# query the users list in there and LDAP according to it
 sub get_author_email {
     my ($user) = @_;
-    my $authoremail = `repsys authoremail $user 2>/dev/null`;
-    chomp($authoremail);
+    my $authoremail = $user . '@mageia.org';
 
     return $authoremail;
 }
