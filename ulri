@@ -530,7 +530,7 @@ foreach my $prefix (keys %pkg_tree) {
 		
 		sendmail($to, $cc,
 			 "Rebuild failed on $arch for $srpms", $text,
-			 "Ulri the scheduler bot <$config->{admin}>", 0);
+			 "Ulri the scheduler bot <$config->{admin}>", 0, $config);
 	    }
 	    
 	    # clean the log on the compilation machine

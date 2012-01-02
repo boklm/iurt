@@ -239,9 +239,8 @@ sub get_maint {
     }
     my $maint = `GET 'http://maintdb.mageia.org/$srpm_name'`;
     chomp $maint;
-    my $email_maint = $maint . '@mageia.org';
-    $run->{maint}{$srpm} = $email_maint;
-    $email_maint, $srpm_name;
+    $run->{maint}{$srpm} = $maint;
+    $maint, $srpm_name;
 }
 
 sub get_author_email {

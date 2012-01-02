@@ -470,6 +470,10 @@ my %config_usage = (
 	desc => 'Name of the packages distribution',
 	default => 'Mageia'
     },
+    email_domain => {
+	desc => 'Domain to append to usernames when sending emails',
+	default => 'mageia.org'
+    },
     home => {
 	desc => 'Home dir',
 	default => $HOME
@@ -1564,7 +1568,7 @@ sub send_status_mail {
 	}
     }
     print "$text\n";
-    sendmail($run->{status_mail}, '' , "Iurt report for $run->{my_arch}/$run->{media}", $text, "Iurt the rebuild bot <$config->{admin}>", 0);
+    sendmail($run->{status_mail}, '' , "Iurt report for $run->{my_arch}/$run->{media}", $text, "Iurt the rebuild bot <$config->{admin}>", 0, $config);
 }
 
 sub find_provides {

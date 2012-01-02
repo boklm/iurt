@@ -234,7 +234,7 @@ sub perform_command {
 	    sendmail($config->{admin}, '' ,
 		"$opt{hash} on $run->{my_arch} for $run->{media}: broken pipe",
 		"$comment\n$output", "Iurt the build bot <$config->{admin}>",
-		$opt{debug_mail});
+		$opt{debug_mail}, $config);
 	} else {
 	    if ($opt{type} eq 'shell') {
 		$comment = "Command failed: $command\n";
@@ -255,7 +255,7 @@ sub perform_command {
 		    }
 		    plog('ERR', "ERROR: $wr !");
 
-		    sendmail($config->{admin}, '' , "$opt{hash} on $run->{my_arch} for $run->{media}: could not proceed", "$wr\n\n$comment\n$output", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail}) if $opt{wait_mail};
+		    sendmail($config->{admin}, '' , "$opt{hash} on $run->{my_arch} for $run->{media}: could not proceed", "$wr\n\n$comment\n$output", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail}, $config) if $opt{wait_mail};
 		}
 	    }
 	}
@@ -287,9 +287,9 @@ sub perform_command {
 	if ($opt{mail} && $config->{sendmail} && !$config->{no_mail}{$opt{mail}}) {
 	    if (! ($cache->{warning}{$opt{hash}}{$opt{mail}} % $opt{freq})) {
 		my $cc = join ',', grep { !$config->{no_mail}{$_} } split ',', $opt{cc};
-		sendmail($opt{mail}, $cc,  $opt{error} , "$comment\n$out", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail});
+		sendmail($opt{mail}, $cc,  $opt{error} , "$comment\n$out", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail}, $config);
 	    } elsif ($config->{admin}) {
-		sendmail($config->{admin}, '' , $opt{error}, "$comment\n$out", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail});
+		sendmail($config->{admin}, '' , $opt{error}, "$comment\n$out", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail}, $config);
 	    }
 	}
 	$cache->{warning}{$opt{hash}}{$opt{mail}}++;

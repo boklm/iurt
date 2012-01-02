@@ -262,7 +262,7 @@ sub dkms_compile {
 		      "Modules for $name have been built for the current kernel ($kerver) while they should have been build for $modulesdir.",
 		      "Please report to the maintainer of $name",
 		     )),
-		     "Iurt the rebuild bot <$config->{admin}>", 0);
+		     "Iurt the rebuild bot <$config->{admin}>", 0, $config);
 	    next;
 	}
 
