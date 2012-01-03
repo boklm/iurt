@@ -292,9 +292,8 @@ sub upload_prefix_in_section {
 }
 
 foreach my $target (keys %targets) {
-    my %is_finisher;
-
     foreach my $section (keys %{$targets{$target}}) {
+    	my %is_finisher;
 	
 	foreach (values %{$targets{$target}{$section}{'arch_finisher'}}) {
 	    $is_finisher{$_} = 1;
