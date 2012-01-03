@@ -17,7 +17,7 @@ libdir=/usr/lib
 bindir=/usr/bin
 sbindir=/usr/sbin
 
-localrpm: dir localcopy tar 
+localrpm: localcopy tar 
 
 install:
 	install -d $(bindir) $(sbindir) $(INSTALLVENDORLIB)/Iurt
@@ -26,15 +26,14 @@ install:
 	install -m755 iurt2 $(bindir)/iurt
 	install -m755 emi ulri $(bindir)/
 
-dir:
-	mkdir $(PACKAGE)-$(VERSION)
-
-tar:  dir localcopy
-	tar cvf $(PACKAGE)-$(VERSION).tar $(PACKAGE)-$(VERSION)
+tar:  
+	tar cvf $(PACKAGE)-$(VERSION).tar --exclude=.svn --exclude=.perl_checker --exclude='*~' $(PACKAGE)-$(VERSION)
 	rm -rf $(PACKAGE)-$(VERSION)
 
 localcopy:
-	tar c --exclude=.svn --exclude=.perl_checker --exclude='*~' $(FILES) | tar x -C $(PACKAGE)-$(VERSION)
+	rm -fr $(PACKAGE)-$(VERSION)
+	svn export -q -rBASE . $(PACKAGE)-$(VERSION)
+	#tar c --exclude=.svn --exclude=.perl_checker --exclude='*~' $(FILES) | tar x -C $(PACKAGE)-$(VERSION)
 
 localrpm: tar $(RPM)
 	cp -f $(NAME)-$(VERSION).tar $(RPM)/SOURCES

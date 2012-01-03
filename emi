@@ -36,7 +36,7 @@ use Iurt::File qw(check_upload_tree);
 use Iurt::Util qw(plog_init plog);
 use Data::Dumper;
 use MDK::Common qw(cat_ if_);
-use MDK::Common::DataStructure qw(difference2);
+#use MDK::Common::DataStructure qw(difference2);
 
 my %run;
 my $program_name = 'emi';

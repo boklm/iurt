@@ -512,7 +512,7 @@ foreach my $prefix (keys %pkg_tree) {
 		$text .= "\nLog files generated:\n";
 		
 		opendir my $DP1, "$fail_dir/$prefix/log/";
-		foreach my $f1 (readdir $DP1) {
+		foreach my $f1 (sort(readdir($DP1))) {
 		    if (! -d "$fail_dir/$prefix/log/$f1" || $f1 =~ m/^\./) {
 			next;
 		    }
