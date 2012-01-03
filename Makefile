@@ -27,13 +27,12 @@ install:
 	install -m755 emi ulri $(bindir)/
 
 tar:  
-	tar cvf $(PACKAGE)-$(VERSION).tar --exclude=.svn --exclude=.perl_checker --exclude='*~' $(PACKAGE)-$(VERSION)
+	tar cfa $(PACKAGE)-$(VERSION).tar.xz $(PACKAGE)-$(VERSION)
 	rm -rf $(PACKAGE)-$(VERSION)
 
 localcopy:
 	rm -fr $(PACKAGE)-$(VERSION)
 	svn export -q -rBASE . $(PACKAGE)-$(VERSION)
-	#tar c --exclude=.svn --exclude=.perl_checker --exclude='*~' $(FILES) | tar x -C $(PACKAGE)-$(VERSION)
 
 localrpm: tar $(RPM)
 	cp -f $(NAME)-$(VERSION).tar $(RPM)/SOURCES
