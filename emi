@@ -307,6 +307,11 @@ foreach my $target (keys %targets) {
 	foreach my $prefix (keys %is_finisher) {
 	    upload_prefix_in_section($prefix, $section, 1);
 	}
+
+	foreach my $prefix (@{$targets{$target}{$section}{'to_upload'}}) {
+    	    my $path = $pkg_tree{$prefix}{section}{$section}{path};
+	    open FOO, ">$done/$path/$prefix.upload" unless -f "$reject/$path/$prefix.youri";
+        }
     }
 }
 
