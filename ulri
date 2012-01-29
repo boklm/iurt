@@ -389,17 +389,11 @@ foreach my $prefix (keys %pkg_tree) {
 		    }
 		    next if $error;
 		    
-		    # Do nothing if the scp failed, wait for the other run
-		    # (it may be a disk full problem)
-		    # next if $error;
-		    #if ($success) {
-		    # The SRPM should be recreated thus no need to copy it
-		    # foreach my $srpm (@{$ent->{srpms}}) {
-		    #     plog("linking $todo_dir/${prefix}_$srpm to $done_dir/${prefix}_$srpm");
-		    #     link "$todo_dir/${prefix}_$srpm", "$done_dir/${prefix}_$srpm"
-		    # 	}
-		    # FIXME Have to remove remote remaining packages and directory
-		    #}
+		    if ($success) {
+			# Fetch build log and clean remote machine
+			sget($remote, "$prefix_dir/log", "$done_dir/$prefix");
+			ssh($remote, "rm -rf $prefix_dir");
+		    }
 		}
 	    } # if ($status)
 	    
