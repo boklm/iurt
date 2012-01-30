@@ -474,6 +474,7 @@ foreach my $prefix (keys %pkg_tree) {
 		my $file = "$todo_dir/${prefix}_$srpm";
 		plog('DEBUG', "moving $file to $fail_dir/${prefix}_$srpm");
 		link $file, "$fail_dir/${prefix}_$srpm";
+		# FIXME If another arch is currently building, we will not clean its logs (Bug #4343)
 		delete $pkg_tree{$prefix};
 		unlink $file;
 		# If one arch has been generated, we also have a src.rpm in done
