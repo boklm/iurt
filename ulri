@@ -391,7 +391,8 @@ foreach my $prefix (keys %pkg_tree) {
 		    
 		    if ($success) {
 			# Fetch build log and clean remote machine
-			sget($remote, "$prefix_dir/log", "$done_dir/$prefix");
+			make_path("$done_dir/$prefix");
+			sget($remote, "$prefix_dir/log/*", "$done_dir/$prefix");
 			ssh($remote, "rm -rf $prefix_dir");
 		    }
 		}
