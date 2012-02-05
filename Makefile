@@ -1,7 +1,7 @@
 
 NAME=iurt
 PACKAGE=$(NAME)
-VERSION=0.6.5
+VERSION=0.6.6
 
 FILES= Makefile emi iurt.spec iurt2 iurt_root_command lib ulri 
 RPM=$(HOME)/rpm
