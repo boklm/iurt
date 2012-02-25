@@ -867,7 +867,10 @@ retry:
 	    $union_id = $u_id;
 	}
 
-	$urpmi->urpmi_command($chroot_tmp, $luser);
+	if (!$urpmi->urpmi_command($chroot_tmp, $luser)) {
+	    plog('DEBUG', "Creating chroot failed.\nCommand was: $chroot_tmp");
+	    next;
+	};
 	$srpm =~ /(.*)-[^-]+-[^-]+\.src\.rpm$/ or next;
 	my ($maintainer, $cc);
 	if (!$run{warn}) {
