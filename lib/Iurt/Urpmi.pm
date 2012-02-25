@@ -465,7 +465,7 @@ sub install_packages {
     plog('INFO', "install dependencies using urpmi");
 
     if (!perform_command(
-	    "$self->{urpmi_command} @to_install", 
+	    join(' ', $self->{urpmi_command}, @to_install), 
 	    $run, $config, $cache,
 	    use_iurt_root_command => $self->{use_iurt_root_command},
 	    error => $error,
