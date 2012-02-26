@@ -26,7 +26,7 @@ install:
 	install -m755 iurt2 $(bindir)/iurt
 	install -m755 emi ulri $(bindir)/
 
-tar:  
+tar:  localcopy
 	tar cfa $(PACKAGE)-$(VERSION).tar.xz $(PACKAGE)-$(VERSION)
 	rm -rf $(PACKAGE)-$(VERSION)
 
