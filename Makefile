@@ -35,9 +35,9 @@ localcopy:
 	svn export -q -rBASE . $(PACKAGE)-$(VERSION)
 
 localrpm: tar $(RPM)
-	cp -f $(NAME)-$(VERSION).tar $(RPM)/SOURCES
+	cp -f $(NAME)-$(VERSION).tar.xz $(RPM)/SOURCES
 	-rpm -ba --clean $(NAME).spec
-	rm -f $(NAME)-$(VERSION).tar
+	rm -f $(NAME)-$(VERSION).tar.xz
 
 ci: tar
 	svn ci -m 'Update soft SPEC for version $(VERSION)' $(NAME).spec
