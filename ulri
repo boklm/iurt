@@ -715,7 +715,21 @@ foreach my $prefix (sort keys %pkg_tree) {
 			"$lock_arch.$bot.$host.$fulldate.$pid.lock";
 		    plog('DEBUG', "create lock $lock_file");
 		    create_file($lock_file, "$program_name $$", time());
-		    
+
+                    # Fork to wait for the build to finish
+                    if ((my $fpid = fork()) == 0) {
+                        local $SIG{ALRM} = sub {
+                            # Run ourselves to kill the build
+                            exec "ulri";
+                        };
+                        alarm $config->{faildelay};
+                        # SSH to $host and wait up for $pid to exit
+                        ssh($remote, "'while /bin/true; do ps $pid >/dev/null 2>&1 || exit; sleep 1; done'");
+                        alarm 0;
+                        # Fetch build results
+                        exec "ulri";
+                    }
+
 		    last;
 		}
 		last if $compildone->{$prefix}{$media}{$arch}; 
