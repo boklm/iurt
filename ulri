@@ -293,6 +293,7 @@ check_upload_tree(\%run, $done, \&done_func,);
 plog('MSG', "check build bot results");
 
 my %later;
+my $something_finished;
 foreach my $prefix (keys %pkg_tree) {
     my $ent = $pkg_tree{$prefix};
     foreach my $media (keys %{$ent->{media}}) {
@@ -394,6 +395,7 @@ foreach my $prefix (keys %pkg_tree) {
 			make_path("$done_dir/$prefix");
 			sget($remote, "$prefix_dir/log/*", "$done_dir/$prefix");
 			ssh($remote, "rm -rf $prefix_dir");
+			$something_finished = 1;
 		    }
 		}
 	    } # if ($status)
@@ -760,6 +762,7 @@ plog('INFO', "jobs in queue:", %to_compile ?
 
 
 unlink $pidfile;
+exec "emi" if $something_finished;
 exit();
 
 
