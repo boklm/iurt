@@ -134,7 +134,10 @@ sub done_func {
 	plog('DEBUG', "found rpm $rpm ($prefix) for section $section");
 	$pkg_tree{$prefix}{target} = $f;
 	$pkg_tree{$prefix}{section}{$section}{path} = "/$f/$m/$s";
-	push @{$pkg_tree{$prefix}{section}{$section}{srpms}}, $rpm if $arch eq 'src';
+	if ($arch eq 'src') {
+	    push @{$pkg_tree{$prefix}{section}{$section}{srpms}}, $rpm;
+	    $pkg_tree{$prefix}{section}{$section}{arch}{src} = 1;
+	}
 	push @{$pkg_tree{$prefix}{section}{$section}{rpms}} , $rpm;
     } elsif ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*)\.excluded$/) {
 	my ($prefix, $arch) = ($1, $2);
@@ -147,7 +150,7 @@ sub done_func {
 sub done_post {
     my ($_todo, $f, $m, $s, $r) = @_;
     my $section = "$m/$s";
-    if ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*\.done)$/) {
+    if ($r =~ /(\d{14}\.\w+\.\w+\.\d+)_(.*)\.done$/) {
 	my ($prefix, $arch) = ($1, $2);
 	if (defined($pkg_tree{$prefix})) {
 	    plog('DEBUG', "found .done ($prefix, $arch)");
