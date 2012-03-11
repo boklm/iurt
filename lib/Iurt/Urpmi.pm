@@ -464,8 +464,11 @@ sub install_packages {
 
     plog('INFO', "install dependencies using urpmi");
 
+    my @options;
+    push @options, '--buildrequires' unless @rpm;
+
     if (!perform_command(
-	    join(' ', $self->{urpmi_command}, '--buildrequires', @to_install), 
+	    join(' ', $self->{urpmi_command}, @options, @to_install),
 	    $run, $config, $cache,
 	    use_iurt_root_command => $self->{use_iurt_root_command},
 	    error => $error,
