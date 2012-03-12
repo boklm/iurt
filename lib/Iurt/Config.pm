@@ -137,7 +137,7 @@ sub init_cache {
     my $cachefile = "$config->{cache_home}/$program_name.cache";
     my $cache;
     if (-f $cachefile) {
-	$run->{LOG}->("$program_name: loading cache file $cachefile\n");
+	plog('DEBUG', "loading cache file $cachefile");
 	$cache = eval(cat_($cachefile)) or print "FATAL $program_name: could not load cache $cachefile ($!)\n";
     } else {
 	$cache = $empty;
@@ -166,9 +166,9 @@ sub dump_cache {
     $Data::Dumper::Terse = 1;
     print $file Data::Dumper->Dump([ $cache ], [ "cache" ]);
     # flock does not work on network files and lockf seems to fail too
-    $run->{LOG}->("$program_name: locking to dump the cache in $filename\n");
+    plog('DEBUG', "locking to dump the cache in $filename");
     if (-f "$filename.lock") {
-	$run->{LOG}->("ERROR iurt: manual file lock exist, do not save the cache\n");
+	plog('ERROR', 'ERROR: manual file lock exist, do not save the cache');
     } else {
 	open my $lock, ">$filename.lock";
 	print $lock $$;

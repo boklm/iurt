@@ -50,7 +50,6 @@ my $program_name = 'ulri';
 $run{program_name} = $program_name;
 
 open(my $LOG, ">&STDERR");
-$run{LOG} = sub { print $LOG @_ };
 
 plog_init($program_name, $LOG, 7, 1);
 

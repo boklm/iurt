@@ -238,7 +238,7 @@ sub dkms_compile {
 	    plog('DEBUG', "symlink from $modules_build_dir to /usr/src/$sourcedir");
 
 	    if (system("sudo ln -sf /usr/src/$sourcedir $modules_build_dir")) {
-		plog('ERROR', "linking failed ($!)");
+		plog('ERROR', "ERROR: linking failed ($!)");
 		next;
 	    }
 	}
@@ -282,13 +282,13 @@ sub dkms_compile {
 	    if (system("cp $rpms $dkms_spool/$media/ &>/dev/null") == 0) {
 		$copied = 1;
 		sudo($run, $config, '--rm', $rpms)
-		    or $run->{LOG}->("ERROR: could not delete dkms packages from $rpms ($!)\n");
+		    or plog('ERROR', "ERROR: could not delete dkms packages from $rpms ($!)");
 		last;
 	    }
 	}
-	$run->{LOG}->("ERROR: could not copy dkms packages from " .
+	plog('ERROR', "ERROR: could not copy dkms packages from " .
 		      join(" or ", map { "$chroot_tmp$_/*.rpm" } @dkms_rpm_dirs) .
-		      " to $dkms_spool/$media ($!)\n") if !$copied;
+		      " to $dkms_spool/$media ($!)") if !$copied;
 
 	process_dkms_queue($self, 0, 0, $media, "$dkms_spool/$media");
 	# compile dkms modules

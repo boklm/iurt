@@ -201,7 +201,6 @@ $run{todo} = [];
     sub { 
 	$run{log} = pop @_; 
 	open my $log, ">$run{log}" or die "unable to open $run{log}\n";
-	$run{LOG} = sub { print $log @_ };
 	$run{logfd} = $log;
 	print *$log, "command line: @ARGV\n";
 	1;
@@ -360,7 +359,6 @@ $run{todo} = [];
 );
 
 open(my $LOG, ">&STDERR");
-$run{LOG} = sub { print $LOG @_ };
 
 plog_init($program_name, $run{logfd}||$LOG, 7, 1); # For parsing command line
 
