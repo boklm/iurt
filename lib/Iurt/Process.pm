@@ -49,7 +49,7 @@ sub check_pid {
 	close $test_PID;
 
 	if (!$pid) {
-	    plog('ERR', "ERROR: invalid pidfile ($pid), should be <pid>");
+	    plog('ERROR', "ERROR: invalid pidfile ($pid), should be <pid>");
 	    unlink $pidfile;
 	}
 
@@ -253,7 +253,7 @@ sub perform_command {
 		    if (ref $opt{wait_regexp}{$wr}) {
 			$inc = $opt{wait_regexp}{$wr}(\%opt, $output);
 		    }
-		    plog('ERR', "ERROR: $wr !");
+		    plog('ERROR', "ERROR: $wr !");
 
 		    sendmail($config->{admin}, '' , "$opt{hash} on $run->{my_arch} for $run->{media}: could not proceed", "$wr\n\n$comment\n$output", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail}, $config) if $opt{wait_mail};
 		}
@@ -271,7 +271,7 @@ sub perform_command {
 
     if (!$call_ret || $kill || $err || $opt{error_regexp} && $fulloutput =~ /$opt{error_regexp}/) {
 
-	plog('ERR', "ERROR: call_ret=$call_ret kill=$kill err=$err ($opt{error_regexp})");
+	plog('ERROR', "ERROR: call_ret=$call_ret kill=$kill err=$err ($opt{error_regexp})");
 
 	if ($opt{log} && $config->{log_url}) {
 	    $comment = qq(See $config->{log_url}/$run->{distro_tag}/$run->{my_arch}/$run->{media}/log/$opt{srpm}/\n\n$comment);

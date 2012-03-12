@@ -378,7 +378,7 @@ foreach my $prefix (keys %pkg_tree) {
 			make_path($done_dir);
 			if (sget($remote, "$prefix_dir/$result",
 				 "$result_file.new")) {
-			    plog('ERR', "copying $result from $host failed ($!)");
+			    plog('ERROR', "copying $result from $host failed ($!)");
 			    $error = 1;
 			    last;
 			} elsif (move("$result_file.new", $result_file)) {
@@ -441,7 +441,7 @@ foreach my $prefix (keys %pkg_tree) {
 	    }
 	    
 	    if (!$status) {
-	    plog('ERR', "build bot died on $host, reschedule compilation");
+	    plog('ERROR', "build bot died on $host, reschedule compilation");
 	    next bot;
 	    }
 	    
@@ -453,7 +453,7 @@ foreach my $prefix (keys %pkg_tree) {
 	    
 	    mkdir("$fail_dir/$prefix"); 
 	    if (sget($remote, "$prefix_dir/*", "$fail_dir/$prefix")) {
-		plog('ERR', "copying from $host:$prefix_dir/ " .
+		plog('ERROR', "copying from $host:$prefix_dir/ " .
 		     "to $fail_dir/ failed ($!)");
 		$compildone->{$prefix}{$media}{$arch} = 0;
 		# clean the log on the compilation machine

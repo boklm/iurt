@@ -264,11 +264,11 @@ sub upload_prefix_in_section {
 	plog('INFO', "upload succeeded");
     } else {
 	# should send a mail or something
-	plog('ERR', "upload failed ($!), rejecting files in $reject/$path/");
+	plog('ERROR', "upload failed ($!), rejecting files in $reject/$path/");
 	make_path("$reject/$path");
 	foreach my $rpm (@{$pkg_tree{$prefix}{section}{$section}{rpms}}) {
 	    link "$done/$path/${prefix}_$rpm", "$reject/$path/${prefix}_$rpm";
-	    plog('ERR', "ERROR: link of $rpm failed ($!)");
+	    plog('ERROR', "ERROR: link of $rpm failed ($!)");
 	}
 	link "$done/$path/$prefix.youri", "$reject/$path/$prefix.youri";
 	

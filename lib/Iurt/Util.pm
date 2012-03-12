@@ -53,11 +53,9 @@ my @plog_prefix = (
 	"D: ",
 );
 
-# FIXME: remove one of ERROR or ERR, check and fix everywhere else
 my %plog_level = (
 	NONE	=> 0,
 	ERROR	=> 1,
-	ERR	=> 1,
 	WARN	=> 2,
 	MSG	=> 3,
 	FAIL	=> 4,
@@ -114,7 +112,7 @@ sub plog {
 }
 
 sub pdie {
-	plog('ERR', "@_");
+	plog('ERROR', "@_");
 	die $@;
 }
 

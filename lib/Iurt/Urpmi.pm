@@ -230,7 +230,7 @@ sub add_media {
 		debug_mail => $run->{debug})) {
 	}
     if (!check_media_added($chroot, $regexp)) { 
-	plog('ERR', "ERROR iurt could not add media into the chroot");
+	plog('ERROR', "ERROR iurt could not add media into the chroot");
 	return;
     } 
     1;

@@ -46,13 +46,13 @@ sub search_dkms {
     my $cache = $run->{cache};
     my $path = "$root/$distro/$arch";
     if (!-d $path) {
-	plog('ERR', "ERROR: $path is not a directory");
+	plog('ERROR', "ERROR: $path is not a directory");
 	return;
     }
     my $distrib = MDV::Distribconf::Build->new($path);
     plog("getting media config from $path");
     if (!$distrib->loadtree) {
-	plog('ERR', "ERROR: $path does not seem to be a distribution tree");
+	plog('ERROR', "ERROR: $path does not seem to be a distribution tree");
 	return;
     }
     $distrib->parse_mediacfg;
@@ -137,7 +137,7 @@ sub search_dkms {
 		    }
 		    my $source = find { $kernel_source{$_} } @choices;
 		    if (!$source) {
-			plog('ERR', "ERROR: no source for kernel $kernel (tried " . join(", ", @choices) . ")");
+			plog('ERROR', "ERROR: no source for kernel $kernel (tried " . join(", ", @choices) . ")");
 			next;
 		    }
 		    plog("dkms module $module version $version should be compiled for kernel $kernel ($source)");
@@ -188,7 +188,7 @@ sub dkms_compile {
     add_local_user($chroot_tmp, $run, $config, $luser, $run->{uid});
 
     if (!dump_rpmmacros($run, $config, "$chroot_tmp/home/$luser/.rpmmacros") || !dump_rpmmacros($run, $config, "$chroot_tmp/root/.rpmmacros")) {
-	plog('ERR', "ERROR: adding rpmmacros failed");
+	plog('ERROR', "ERROR: adding rpmmacros failed");
 	return;
     }
 
@@ -221,7 +221,7 @@ sub dkms_compile {
 	    if (!$installed{$pkg}) {
 		plog('DEBUG', "install package: $pkg");
 		if (!$urpmi->install_packages("dkms-$name-$version", $chroot_tmp, $local_spool, {}, "dkms_$pkgname", "[DKMS] package $pkg installation error", { maintainer => $config->{admin} }, $pkg)) {
-		    plog('ERR', "ERROR: error installing package $pkg");
+		    plog('ERROR', "ERROR: error installing package $pkg");
 		    $ok = 0;
 		    last;
 		}
@@ -238,7 +238,7 @@ sub dkms_compile {
 	    plog('DEBUG', "symlink from $modules_build_dir to /usr/src/$sourcedir");
 
 	    if (system("sudo ln -sf /usr/src/$sourcedir $modules_build_dir")) {
-		plog('ERR', "linking failed ($!)");
+		plog('ERROR', "linking failed ($!)");
 		next;
 	    }
 	}
@@ -254,7 +254,7 @@ sub dkms_compile {
 	if ($kerver ne $modulesdir && -d "$chroot_tmp/var/lib/dkms/$realname/$realversion/$kerver/") {
 	    # some of the dkms modules do not handle correclty the -k option
 	    # and use uname -r to find kernel modules dir
-	    plog('ERR', "ERROR: modules have been built for current kernel ($kerver) instead of $modulesdir");
+	    plog('ERROR', "ERROR: modules have been built for current kernel ($kerver) instead of $modulesdir");
 	    system("sudo rm -rf $chroot_tmp/var/lib/dkms/$realname/$realversion/$kerver");
 	    require Text::Wrap;
 	    sendmail("Iurt admins <$config->{admin}>", '' , "Iurt failure for $name",

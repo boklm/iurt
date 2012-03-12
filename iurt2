@@ -377,7 +377,7 @@ my $todo = parseCommandLine($program_name, \@ARGV, \@params);
 @ARGV and usage($program_name, \@params, "@ARGV, too many arguments");
 foreach my $t (@$todo)  {
     plog('DEBUG', $t->[2]);
-    &{$t->[0]}(@{$t->[1]}) or plog('ERR', $t->[2]);
+    &{$t->[0]}(@{$t->[1]}) or plog('ERROR', $t->[2]);
 }
 
 # Use the real verbose level
@@ -623,7 +623,7 @@ if (-f $cachefile && $run{use_cache}) {
     plog('INFO', "loading cache file $cachefile");
 
     $cache = eval(cat_($cachefile))
-	or plog('ERR', "FATAL: could not load cache $cachefile ($!)");
+	or plog('ERROR', "FATAL: could not load cache $cachefile ($!)");
 
     if (!$cache) {
 	opendir my $cache_dir, $config->{cache_home};
@@ -639,7 +639,7 @@ if (-f $cachefile && $run{use_cache}) {
 
 	plog('NOTIFY', "loading alternate cache file $cachefile");
 	$cache = eval(cat_($cachefile))
-		or plog('ERR', "FATAL: could not load cache $cachefile ($!)");
+		or plog('ERROR', "FATAL: could not load cache $cachefile ($!)");
     }
     $clear_cache = 0 if $cache;
 }
@@ -1075,14 +1075,14 @@ retry:
 	    } else {
 		plog('OK', "build successful, copying packages to $local_spool.");
 
-		system("cp $chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm $local_spool &>/dev/null") and plog('ERR', "ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpm/RPMS/ to $local_spool ($!)");
+		system("cp $chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpm/RPMS/ to $local_spool ($!)");
 	    }
 
 	    if ($run{copy_srpm}) {
 		# replace the old srpm
 		unlink "$local_spool/$old_srpm";
 
-		system("cp $chroot_tmp/home/$luser/rpm/SRPMS/$srpm $local_spool &>/dev/null") and plog('ERR', "ERROR: could not copy $srpm from $chroot_tmp/home/$luser/rpm/SRPMS/ to $local_spool ($!)");
+		system("cp $chroot_tmp/home/$luser/rpm/SRPMS/$srpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy $srpm from $chroot_tmp/home/$luser/rpm/SRPMS/ to $local_spool ($!)");
 	    }
 	    process_queue($config, \%run, \@wrong_rpm, 1);
 	}
@@ -1101,9 +1101,9 @@ retry:
 	    $rebuild = 0;
 	    if ($done == @{$run{todo}}) {
 		plog('OK', "all packages succesfully compiled, copying packages to $local_spool.");
-		system("cp $chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm $local_spool &>/dev/null") and plog('ERR', "ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpm/RPMS/ to $local_spool ($!)");
+		system("cp $chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpm/RPMS/ to $local_spool ($!)");
 		if ($run{copy_srpm}) {
-		    system("cp $chroot_tmp/home/$luser/rpm/SRPMS/*.src.rpm $local_spool &>/dev/null") and plog('ERR', "ERROR: could not copy SRPMS from $chroot_tmp/home/$luser/rpm/SRPMS/ to $local_spool ($!)");
+		    system("cp $chroot_tmp/home/$luser/rpm/SRPMS/*.src.rpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy SRPMS from $chroot_tmp/home/$luser/rpm/SRPMS/ to $local_spool ($!)");
 		}
 	    } else {
 		plog('FAIL', "some packages could not be compiled.");

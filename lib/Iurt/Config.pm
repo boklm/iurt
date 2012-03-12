@@ -218,7 +218,7 @@ sub dump_cache_par {
     } else {
 	plog('WARN', "WARNING: locking the cache file $filename failed (status $status $!), try to lock manually");
 	if (-f "$filename.lock") {
-	    plog('ERR', "ERROR: manual file lock exist, do not save the cache");
+	    plog('ERROR', "ERROR: manual file lock exist, do not save the cache");
 	} else {
 	    open my $lock, ">$filename.lock";
 	    print $lock $$;
