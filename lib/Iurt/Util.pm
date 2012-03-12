@@ -1,6 +1,7 @@
 package Iurt::Util;
 
 use base qw(Exporter);
+use Fcntl qw(:flock SEEK_END);
 use strict;
 
 our @EXPORT = qw(
@@ -108,7 +109,12 @@ sub plog {
 	$level = $plog_level{$level};
 	my ($p, $e) = ($plog_prefix[$level], ($plog_color ? $plog_ctr{normal} : ""));
 	
-	print $plog_file "$p@_$e\n" if $plog_level >= $level;
+	if ($plog_level >= $level) {
+		flock($plog_file, LOCK_EX);
+		seek($plog_file, 0, SEEK_END);
+		print $plog_file "$p@_$e\n";
+		flock($plog_file, LOCK_UN);
+	}
 }
 
 sub pdie {
