@@ -294,7 +294,7 @@ sub get_local_provides {
 }
 
 sub get_build_requires {
-    my ($self, $union_id, $luser) = @_;
+    my ($self, $luser) = @_;
     my $run = $self->{run};
     my $config = $self->{config};
     my $cache = $run->{cache};
@@ -302,9 +302,8 @@ sub get_build_requires {
     $run->{todo_requires} = {};
     plog("get_build_requires");
 
-    my ($u_id, $chroot_tmp) = create_temp_chroot($run, $config, $cache, $union_id, $run->{chroot_tmp}, $run->{chroot_tar}) or return;
+    my ($u_id, $chroot_tmp) = create_temp_chroot($run, $config, $cache, $run->{chroot_tmp}, $run->{chroot_tar}) or return;
     add_local_user($chroot_tmp, $run, $config, $luser, $run->{uid}) or return;
-    $union_id = $u_id;
     
     my $urpm = new URPM;
     foreach my $p (@{$run->{todo}}) {
@@ -322,7 +321,7 @@ sub get_build_requires {
 }
 
 sub order_packages {
-    my ($self, $union_id, $provides, $luser) = @_;
+    my ($self, $provides, $luser) = @_;
     my $run = $self->{run};
     my @packages = @{$run->{todo}};
     my $move;
@@ -330,7 +329,7 @@ sub order_packages {
     plog(1, "order_packages");
     get_local_provides($self) or return;
     if (!$run->{todo_requires}) {
-	get_build_requires($self, $union_id, $luser) or return;
+	get_build_requires($self, $luser) or return;
     }
     my %visit;
     my %status;

@@ -39,7 +39,7 @@ use URPM;
 use Iurt::DKMS;
 
 use Iurt::Urpmi;
-use Iurt::Chroot qw(add_local_user create_temp_chroot remove_chroot clean_unionfs clean_all_unionfs clean_all_chroot_tmp check_build_chroot clean_chroot);
+use Iurt::Chroot qw(add_local_user create_temp_chroot remove_chroot clean_all_chroot_tmp check_build_chroot clean_chroot);
 use Iurt::Process qw(perform_command clean kill_for_good sudo);
 use Iurt::Mail qw(sendmail);
 use Iurt::Util qw(plog_init plog);
@@ -92,8 +92,8 @@ $run{todo} = [];
     #
     [ "", $program_name, 0, "[--cache] [--chrooted-urpmi <media prefix>] [--concurrent-run] [--config foo value] [--warn] [--verbose integer]
             [--copy-srpm] [--debug] [--distro] [--no-rsync] [--clean user1 user2 user3] [--clean-all] [--shell] [--stop {p|c|i|l|b|a|s}]
- 	    [--use-system-distrib] [--dir] [--help foo?] [--log filename] [--group] [--unionfs]
- 	    [--upload [--markrelease] [--source]] [--dir] [--help foo?] [--log filename]  [--unionfs] [--status] [--ignore-failure]
+ 	    [--use-system-distrib] [--dir] [--help foo?] [--log filename] [--group]
+ 	    [--upload [--markrelease] [--source]] [--dir] [--help foo?] [--log filename] [--status] [--ignore-failure]
 	    [--repository <distribution path>]
 	    [--rpmmacros <macro definition> [<macro definition>...]]
  	    {--config_help | --dkms {--media <media regexp>}
@@ -193,9 +193,6 @@ $run{todo} = [];
     [ "", "ignore-failure", 0, "", 
     "Do not take into account the failure cache, try to recompile all the packages not synchronized", 
     sub { $run{ignore_failure} = 1 }, "Activating the mode ignoring previous failure" ],
-    [ "u", "unionfs", 0, "", 
-    "Activate unionfs mode", 
-    sub { $run{unionfs} = 1 }, "Activating unionfs mode" ],
     [ "l", "log", 1, "<log file>", 
     "Log file.", 
     sub { 
@@ -650,7 +647,6 @@ if ($clear_cache) {
 	warning => {},
 	run => 1,
 	needed => {},
-	no_unionfs => {}
     };
 }
 $run{cache} = $cache;
@@ -695,22 +691,10 @@ check_sudo_access()
 
 my $debug_tag = $run{debug} && '_debug';
 $run{debug_tag} = $debug_tag;
-if ($run{unionfs} && !$run{use_old_chroot}) {
-    plog(1, "adding unionfs module");
-    sudo(\%run, $config, "--modprobe", "unionfs") or $run{unionfs} = 0;
-    if ($run{unionfs}) {
-	$run{unionfs_dir} = "$config->{local_home}/iurt_unionfs$debug_tag/";
-	remove_chroot(\%run, $run{unionfs_dir}, \&clean_all_unionfs);
-	$run{unionfs_dir} = "$run{unionfs_dir}/$run{user}/";
-	-d $run{unionfs_dir} or mkdir $run{unionfs_dir};
-    }
-}
 
 my (%done, $done);
 $run{done} = \%done;
 my $home = $config->{local_home};
-my $union_id = 1;
-$run{unionfs_tmp} = $run{unionfs};	
 
 my ($chroot_name, $chroot_tmp, $chroot, $chroot_tar);
 $chroot_name = "chroot_$run{distro_tag}$debug_tag.$run{my_arch}";
@@ -762,8 +746,8 @@ if ($df->{per} >= 99) {
 
 if ($run{shell}) {
     if (!$run{use_old_chroot}) {
-	($union_id, my $chroot_tmp) = create_temp_chroot(\%run, $config,
-	$cache, $union_id, $chroot_tmp, $chroot_tar)
+	my $chroot_tmp = create_temp_chroot(\%run, $config,
+	$cache, $chroot_tmp, $chroot_tar)
 	    or die "FATAL $program_name: could not create temporary chroot";
     }
     add_local_user($chroot_tmp, \%run, $config, $luser, $run{uid}) or die "FATAL $program_name: could not add local user";
@@ -816,7 +800,7 @@ $run{group} = 0 if @{$run{todo}} == 1;
 if ($run{group}) { 
     $rebuild = 1;
     $urpmi->set_local_media($local_spool);
-    $urpmi->order_packages($union_id, \%provides, $luser)
+    $urpmi->order_packages(\%provides, $luser)
 	or die "FATAL $program_name: could not order packages";
 }
 #
@@ -860,9 +844,8 @@ retry:
 	$urpmi->clean_urpmi_process;
 	
 	if (!$run{use_old_chroot}) {
-	    (my $u_id, $chroot_tmp) = create_temp_chroot(\%run, $config,
-		$cache, $union_id, $chroot_tmp, $chroot_tar, $srpm) or next; 
-	    $union_id = $u_id;
+	    $chroot_tmp = create_temp_chroot(\%run, $config,
+		$cache, $chroot_tmp, $chroot_tar, $srpm) or next; 
 	}
 
 	if (!$urpmi->urpmi_command($chroot_tmp, $luser)) {
@@ -971,15 +954,7 @@ retry:
 			exit();
 		    }
 		    plog('DEBUG', "calling callback for $opt->{hash}");
-		    if ($run{unionfs_tmp} && $output =~ /no space left on device/i) {
-			plog('ERROR', "ERROR: running out of space to compile $srpm in unionfs mode, will recompile it in normal mode");
-			$cache->{no_unionfs}{$srpm} = 1;
-			return 1;
-		    } elsif ($run{unionfs_tmp} && $output =~ m,$home,) {
-			plog('ERROR', "ERROR: seems like building $srpm needs to access /proc/self/exe, which is broken with unionfs, will try to recompile it in non unionfs mode");
-			$cache->{no_unionfs}{$srpm} = 1;
-			return 1;
-		    } elsif ($output =~ /bin\/ld: cannot find -l(\S*)|configure.*error.* (?:-l([^\s]+)|([^\s]+) includes)/) {
+		    if ($output =~ /bin\/ld: cannot find -l(\S*)|configure.*error.* (?:-l([^\s]+)|([^\s]+) includes)/) {
 			my $missing = $1;
 			my @rpm = find_provides(\%run, \%pack_provide, $missing);
 			plog(5, "likely @rpm ($missing-devel) needed to rebuilt $srpm is not in build_requires");
@@ -1004,26 +979,7 @@ retry:
 		}, 
 		freq => 1)) {
 
-	    # FIXME
-	    # The simple algo used here is : 
-	    #  try to compile it with unionfs, if it runs out of space,
-	    #  compile it without the next time
-	    #
-	    #  This could be improved in keeping this srpm name for future
-	    #  version, but if we compile it on a new machine with more ram,
-	    #  or if next version compiles just fine with unionfs, we will
-	    #  loose the unionfs advantage. 
-	    #
-	    #  Maybe the right thing to do would be to first try to increase
-	    #  the tmpfs size (more than 50 % of the physical RAM), but this
-	    #  will lead to more swap usage, and slower compilation (and lost
-	    #  of the unionfs plus). Or to keep the faulty package a unionfs
-	    #  exception for some time, to save some more extra builds.
-
 	    if (!glob "$chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm") {
-		if ($run{unionfs_tmp} && $cache->{no_unionfs}{$srpm}) {
-		    goto retry;
-		}
 		$cache->{failure}{$srpm} = 1;
 		$run{status}{$srpm} = 'build_failure';
 		# 20060615
@@ -1091,7 +1047,7 @@ retry:
 	for (my $i; $i < @{$run{todo}}; $i++) {
 	    my (undef, $srpm) = @{$run{todo}[$i]};
 	    if (!$run{done}{$srpm}) {
-		$rebuild = $urpmi->order_packages($union_id, \%provides, $luser);
+		$rebuild = $urpmi->order_packages(\%provides, $luser);
 		last;
 	    }
 	}
@@ -1110,13 +1066,8 @@ retry:
     }
 } while $rebuild;
 
-my ($unionfs_dir) = $run{unionfs_dir} =~ m!(.*)/[^/]+/?!;
 if (!$run{debug} && !$run{use_old_chroot}) {
-    if ($run{unionfs}) {
-	clean_unionfs("$unionfs_dir/$run{user}", \%run, $run{run}, $union_id);
-    } else {
-	clean_chroot($chroot_tmp, $chroot_tar, \%run, $config, 1);
-    }
+    clean_chroot($chroot_tmp, $chroot_tar, \%run, $config, 1);
 }
 plog("reprocess generated packages queue");
 process_queue($config, \%run, \@wrong_rpm);
@@ -1140,11 +1091,6 @@ if ($config->{rsync_to} && !$run{no_rsync}) {
 	system('rsync', '--delete', '-alHPe', 'ssh -xc arcfour', "$local_spool/log/", "$config->{rsync_to}/$run{distro_tag}/$run{my_arch}/$run{media}/log/");
 }
 
-# one last try to clean
-plog('DEBUG', "clean remaining unionfs");
-if ($run{unionfs} && !$run{use_old_chroot}) {
-    remove_chroot(\%run, $unionfs_dir, \&clean_all_unionfs);
-}
 unlink "$run{pidfile_home}/$run{pidfile}" if $run{pidfile};
 
 exit();

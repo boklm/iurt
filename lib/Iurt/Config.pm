@@ -198,13 +198,13 @@ sub dump_cache_par {
 	    plog('DEBUG', "loading cache file $filename");
 	    $old_cache = eval(cat_($filename));
 
-	    foreach my $k ('rpm_srpm', 'failure', 'no_unionfs', 'queue', 'needed', 'warning', 'buildrequires') {
+	    foreach my $k ('rpm_srpm', 'failure', 'queue', 'needed', 'warning', 'buildrequires') {
 		foreach my $rpm (%{$old_cache->{$k}}) {
 		    $cache->{$k}{$rpm} ||= $old_cache->{$k}{$rpm};
 		}
 	    }
 	}
-	#  $cache = { rpm_srpm => {}, failure => {}, queue => {}, warning => {}, run => 1, needed => {}, no_unionfs => {} }
+	#  $cache = { rpm_srpm => {}, failure => {}, queue => {}, warning => {}, run => 1, needed => {} }
     }
     $Data::Dumper::Indent = 1;
     $Data::Dumper::Terse = 1;

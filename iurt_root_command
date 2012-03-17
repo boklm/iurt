@@ -35,7 +35,7 @@ my $arg = @ARGV;
 my (@params, %run);
 $run{program_name} = $program_name;
 
-my %authorized_modules = ('unionfs' => 1);
+my %authorized_modules = ();
 my %authorized_rw_bindmounts = (map { $_ => 1 } qw(/proc /dev/pts /var/cache/icecream));
 
 $run{todo} = [];
@@ -213,7 +213,7 @@ sub mkdir {
     my ($_run, $opt, @dir) = @_;
     foreach my $path (@dir) {
 	-d $path and next;
-	if ($path =~ m,/dev|/proc|/root|/var, && $path !~ /chroot|unionfs/) {
+	if ($path =~ m,/dev|/proc|/root|/var, && $path !~ /chroot/) {
 	    plog('FAIL', "ERROR: $path creation forbidden");
 	}
 	if ($opt->{parents}) {

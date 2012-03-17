@@ -12,9 +12,7 @@ use File::Path 'mkpath';
 
 our @EXPORT = qw(
     clean_chroot_tmp
-    clean_unionfs
     clean_all_chroot_tmp
-    clean_all_unionfs
     clean_chroot
     update_chroot
     dump_rpmmacros
@@ -207,83 +205,17 @@ sub add_local_user {
 }
 
 sub create_temp_chroot {
-    my ($run, $config, $cache, $union_id, $chroot_tmp, $chroot_tar, $o_srpm) = @_;
+    my ($run, $config, $cache, $chroot_tmp, $chroot_tar, $o_srpm) = @_;
 
     my $home = $config->{local_home};
     my $debug_tag = $run->{debug_tag};
-    my $unionfs_dir = $run->{unionfs_dir};
 
-    if ($run->{unionfs_tmp}) {
-	my $mount_point = "$unionfs_dir/unionfs.$run->{run}.$union_id";
-	plog(2, "cleaning temp chroot $mount_point");
-	if (!clean_mnt($run, $mount_point, $run->{verbose})) {
-	    dump_cache_par($run);
-	    die "FATAL: can't kill remaining processes acceding $mount_point";
-	}
-	my $tmpfs;
+    plog("Install new chroot");
+    plog('DEBUG', "... in $chroot_tmp");
+    clean_chroot($chroot_tmp, $chroot_tar, $run, $config) or return;
+    update_chroot($chroot_tmp, $run, $config);
 
-	# we cannont just rm -rf $tmpfs, this create defunct processes
-	# afterwards (and lock particularly hard the urpmi database)
-	#
-	$union_id = clean_unionfs($unionfs_dir, $run, $run->{run}, $union_id);
-	$tmpfs = "$unionfs_dir/tmpfs.$run->{run}.$union_id";
-	$chroot_tmp = "$unionfs_dir/unionfs.$run->{run}.$union_id";
-
-	if (!-d $tmpfs) {
-	    if (!mkpath($tmpfs)) {
-		plog("ERROR: Could not create $tmpfs ($!)");
-		return;
-	    }
-	}
-	if (! -d $chroot_tmp) {
-	    if (!mkpath($chroot_tmp)) {
-		plog("ERROR: Could not create $chroot_tmp ($!)");
-		return;
-	    }
-	}
-	if ($cache->{no_unionfs}{$o_srpm}) {
-	    $run->{unionfs_tmp} = 0;
-	    clean_chroot($chroot_tmp, $chroot_tar, $run, $config);
-	} else {
-	    # if the previous package has been built without unionfs, chroot need to be cleaned
-	    if (!$run->{unionfs_tmp}) {
-		clean_chroot($chroot_tmp, $chroot_tar, $run, $config);
-	    } else {
-		# only detar the chroot if not already
-		clean_chroot($chroot_tmp, $chroot_tar, $run, $config, 0, 1);
-	    }
-	    $run->{unionfs_tmp} = 1;
-	    if (system(qq($sudo mount -t tmpfs none $tmpfs &>/dev/null))) {
-		plog("ERROR: can't mount $tmpfs ($!)"); 
-		return;
-	    }
-	    if (system(qq($sudo mount -o dirs=$tmpfs=rw:$home/chroot_$run->{distro_tag}$debug_tag=ro -t unionfs none $chroot_tmp &>/dev/null))) {
-		plog("ERROR: can't mount $tmpfs and $home/chroot_$run->{distro_tag}$debug_tag with unionfs ($!)");
-		return;
-	    }
-	    if (system("$sudo mount -t proc none $chroot_tmp/proc &>/dev/null")) {
-		plog("ERROR: can't mount /proc in chroot $chroot_tmp ($!)");
-		return;
-	    }
-	    if (!-d "$chroot_tmp/dev/pts") {
-		if (sudo($run, $config, "--mkdir", "$chroot_tmp/dev/pts")) {
-		    plog("ERROR: can't create /dev/pts in chroot $chroot_tmp ($!)");
-		    return;
-		}
-
-		if (system($sudo, "mount", "-t", "devpts", "none", "$chroot_tmp/dev/pts &>/dev/null")) {
-		    plog("ERROR: can't mount /dev/pts in the chroot $chroot_tmp ($!)");
-		    return;
-		}
-	    }
-	}
-    } else {
-	plog("Install new chroot");
-	plog('DEBUG', "... in $chroot_tmp");
-	clean_chroot($chroot_tmp, $chroot_tar, $run, $config) or return;
-	update_chroot($chroot_tmp, $run, $config);
-    }
-    $union_id, $chroot_tmp;
+    $chroot_tmp;
 }
 
 sub remove_chroot {
@@ -327,53 +259,6 @@ sub clean_all_chroot_tmp {
 	clean_chroot_tmp($run, $chroot_dir, $_);
     }
     closedir $dir;
-}
-
-sub clean_unionfs {
-    my ($unionfs_dir, $_run, $r, $union_id) = @_;
-
-    -d "$unionfs_dir/unionfs.$r.$union_id" or return $union_id;
-    plog(2, "cleaning unionfs $unionfs_dir/unionfs.$r.$union_id");
-    my $nok = 1;
-    my $path = "$unionfs_dir/unionfs.$r.$union_id";
-
-    while ($nok) {
-	$nok = 0;
-	foreach my $fs ([ 'proc', 'proc' ], [ 'dev/pts', 'devpts' ]) {
-	    my ($dir, $type) = @$fs;
-	    if (-d "$path/$dir" && check_mounted("$path/$dir", $type)) {
-		plog(1, "clean_unionfs: umounting $path/$dir\n");
-		if (system("$sudo umount $path/$dir &>/dev/null")) { 
-		    plog("ERROR: could not umount $path/$dir");
-		}
-	    }
-	}
-	foreach my $t ('unionfs', 'tmpfs') {
-	    # unfortunately quite oftem the unionfs is busy and could not
-	    # be unmounted
-
-	    my $d = "$unionfs_dir/$t.$r.$union_id";
-	    if (-d $d && check_mounted($d, $t)) {
-		$nok = 1;
-		system("$sudo /sbin/fuser -k $d &> /dev/null");
-		plog(3, "umounting $d");
-		if (system(qq($sudo umount $d &> /dev/null))) {
-		    plog(2, "WARNING: could not umount $d ($!)");
-		    return $union_id + 1;
-		}
-	    }
-	}
-    }
-
-    foreach my $t ('unionfs', 'tmpfs') {
-	my $d = "$unionfs_dir/$t.$r.$union_id";
-	plog(2, "removing $d");
-	if (system($sudo, 'rm', '-rf', $d)) {
-	    plog("ERROR: removing $d failed ($!)");
-	    return $union_id + 1;
-	}
-    }
-    $union_id;
 }
 
 sub clean_chroot_tmp {
@@ -589,25 +474,5 @@ sub check_chroot {
     }
     create_chroot($chroot, $chroot_tar, $run, $config, $opt);
 }
-
-sub clean_all_unionfs {
-    my ($run, $unionfs_dir) = @_;
-
-    plog(2, "Cleaning old unionfs remaining dir in $unionfs_dir");
-
-    my $dir;
-    if (!opendir $dir, $unionfs_dir) {
-	plog(0, "FATAL could not open $unionfs_dir ($!)");
-	return;
-    }
-
-    foreach (readdir $dir) {
-	/unionfs\.((?:0\.)?\d+)\.(\d*)$/ or next;
-	clean_unionfs($unionfs_dir, $run, $1, $2);
-    }
-
-    closedir $dir;
-}
-
 
 1;
