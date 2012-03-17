@@ -494,10 +494,6 @@ my %config_usage = (
 	desc => 'Where the log can be seen',
 	default => ''
     },
-    minimum_package_number => {
-	"Minimum number of packages in a synthesis file to consider it valid",
-	default => 1000
-    },
     max_command_retry => {
 	"Maximum number of retry Iurt will perform for a given command",
 	default => 20
@@ -1298,7 +1294,6 @@ sub check_media {
 		plog("Parsing $synthesis_file");
 		if (open my $syn, "zcat $synthesis_file |") { 
 		    my @prov;
-		    my $nb;
                     local $_;
 		    while (<$syn>) {
 			if (/^\@provides@(.*)/) {
@@ -1309,7 +1304,6 @@ sub check_media {
                        }
 			    }
 			} elsif (/\@info\@([^@]+)@/) {
-			    $nb++;
 			    my $p = $1;
 			    my ($name) = $p =~ /(.*)-[^-]+-[^-]+\./;
 			    $provides->{$p} = 1;
@@ -1319,7 +1313,6 @@ sub check_media {
 			    @prov = ();
 			}
 		    }
-		    $nb < $config->{minimum_package_number} and die "FATAL $program_name: synthesis files seems corrupted, only $nb packages found.";
 		} else {
 		    die "FATAL $program_name: Could not open $synthesis_file\n";
 		}
