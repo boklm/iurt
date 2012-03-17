@@ -358,9 +358,9 @@ plog_init($program_name, $run{logfd}||$LOG, 7, 1); # For parsing command line
 
 # Display version information
 #
-(my $iurt_rev = '$Rev: 271258 $') =~ s/.*: (\d+).*/$1/;
-(my $iurt_aut = '$Author: blino $') =~ s/.*: (..).*/$1/;
-(my $iurt_dat = '$Date: 2010-10-31 23:10:12 +0100 (Sun, 31 Oct 2010) $')
+(my $iurt_rev = '$Rev$') =~ s/.*: (\d+).*/$1/;
+(my $iurt_aut = '$Author$') =~ s/.*: (..).*/$1/;
+(my $iurt_dat = '$Date$')
 	=~ s/.*: ([\d-]* [\d:]*) .*/$1/;
 plog("MSG", "This is iurt2 revision $iurt_rev-$iurt_aut ($iurt_dat)");
 
