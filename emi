@@ -35,7 +35,7 @@ use Iurt::Mail qw(sendmail);
 use Iurt::File qw(check_upload_tree);
 use Iurt::Util qw(plog_init plog);
 use Data::Dumper;
-use MDK::Common qw(cat_ if_);
+use MDK::Common qw(cat_ if_ touch);
 use MDK::Common::DataStructure qw(difference2);
 
 my %run;
@@ -323,7 +323,7 @@ foreach my $target (keys %targets) {
 
 	foreach my $prefix (@{$targets{$target}{$section}{to_upload}}) {
     	    my $path = $pkg_tree{$prefix}{section}{$section}{path};
-	    open FOO, ">$done/$path/$prefix.upload" unless -f "$reject/$path/$prefix.youri";
+	    touch("$done/$path/$prefix.upload") unless -f "$reject/$path/$prefix.youri";
         }
     }
 }
