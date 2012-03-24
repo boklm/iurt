@@ -1364,9 +1364,8 @@ sub search_packages {
 		    $to_compile++;
 		    push @{$run->{todo}}, [ $dir , $srpm, 1 ];
 		}
-		foreach my $arch (@{$config->{supported_arch}}) { #FIXME: (tv) this loop looks suspiciously broken
-		    $ok &&= $cache->{queue}{$srpm};
-		}
+
+		$ok &&= $cache->{queue}{$srpm};
 	    }
 	    if ($clean && ($rep{$srpm} || $ok)) {
 		print "$program_name: cleaning $dir/$srpm\n";
