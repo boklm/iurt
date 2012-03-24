@@ -215,7 +215,7 @@ sub dkms_compile {
 	foreach my $pkg ("kernel-$source", "dkms", "kernel-$kernel", $file) {
 	    my $pkgname = basename($pkg);
 	    if ($run->{chrooted_urpmi} && -f $pkg) {
-		copy $pkg, "$chroot_tmp/tmp/";
+		copy($pkg, "$chroot_tmp/tmp/");
 		$pkg = "/tmp/$pkgname";
 	    }
 	    if (!$installed{$pkg}) {
