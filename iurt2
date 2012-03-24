@@ -1138,8 +1138,8 @@ sub check_needed {
 }
 
 sub process_queue {
-    my ($config, $run, $wrong_rpm, $quiet) = @_;
-    return if !$run->{upload} && $quiet;
+    my ($config, $run, $wrong_rpm, $o_quiet) = @_;
+    return if !$run->{upload} && $o_quiet;
     my $dir = "$config->{local_upload}/iurt/$run->{distro_tag}/$run->{my_arch}/$run->{media}/";
     opendir my $rpmdir, $dir or return;
     my $urpmi = $run->{urpmi};
