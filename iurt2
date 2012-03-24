@@ -543,6 +543,7 @@ my %config_usage = (
     },
 );
 
+# FIXME: missing parameters
 config_usage() if $run{config_usage};
 $run{my_arch} or usage($program_name, \@params, "no architecture given (media $run{media}, run{my_arch} $run{my_arch}, todo", join(', ', @{$run{todo}}));
 if (!$arch_comp{$real_arch}{$run{my_arch}}) {
