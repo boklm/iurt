@@ -946,7 +946,7 @@ retry:
 		    plog('DEBUG', "calling callback for $opt->{hash}");
 		    if ($output =~ m!/bin/ld: cannot find -l(\S*)|configure.*error.* (?:-l(\S+)|(\S+) includes)!) {
 			my $missing = $1;
-			my @rpm = find_provides(\%run, \%pack_provide, $missing);
+			my @rpm = find_provides(\%pack_provide, $missing);
 			plog(5, "likely @rpm ($missing-devel) needed to rebuilt $srpm is not in build_requires");
 			if ($maintainer ne 'NOT_FOUND') {
 			    $opt->{mail} = $maintainer;
@@ -1504,7 +1504,7 @@ sub send_status_mail {
 }
 
 sub find_provides {
-    my ($_run, $pack_provide, $p) = @_;
+    my ($pack_provide, $p) = @_;
     my @rpm;
     foreach my $provides (keys %{pack_provide}) {
 	if ($provides =~ /$p/ && $provides =~ /devel/) {
