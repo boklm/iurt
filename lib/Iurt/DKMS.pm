@@ -130,7 +130,7 @@ sub search_dkms {
 			} elsif ($prefix) {
 			    # other flavour
 			    push @choices, "${prefix}devel-$v";
-			    if (my ($main_prefix, $_flavour) = $prefix =~ /^([^-]+-)?([^-]+)-$/) {
+			    if (my ($main_prefix) = $prefix =~ /^([^-]+-)?[^-]+-$/) {
 				push @choices, "${main_prefix}source-$v";
 			    }
 			}
