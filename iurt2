@@ -40,7 +40,7 @@ use Iurt::DKMS;
 
 use Iurt::Urpmi;
 use Iurt::Chroot qw(add_local_user create_temp_chroot remove_chroot clean_all_chroot_tmp check_build_chroot clean_chroot);
-use Iurt::Process qw(perform_command clean kill_for_good sudo);
+use Iurt::Process qw(perform_command kill_for_good sudo);
 use Iurt::Mail qw(sendmail);
 use Iurt::Util qw(plog_init plog);
 use File::NCopy qw(copy);

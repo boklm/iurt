@@ -4,7 +4,7 @@ use strict;
 use base qw(Exporter);
 use MDV::Distribconf::Build;
 use MDK::Common;
-use Iurt::Process qw(clean sudo);
+use Iurt::Process qw(sudo);
 use Iurt::Config qw(dump_cache_par);
 use Iurt::Util qw(plog);
 use File::Temp 'mktemp';
