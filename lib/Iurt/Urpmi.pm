@@ -308,7 +308,7 @@ sub get_build_requires {
     my $urpm = new URPM;
     foreach my $p (@{$run->{todo}}) {
 	my ($dir, $srpm, $s) = @$p;
-	recreate_srpm($self, $run, $config, $chroot_tmp, $dir, $srpm, $run->{user}) or return;
+	$self->recreate_srpm($run, $config, $chroot_tmp, $dir, $srpm, $run->{user}) or return;
 	$s or next;
 	my $id = $urpm->parse_rpm("$dir/$srpm");
 	my $pkg = $urpm->{depslist}[$id];
