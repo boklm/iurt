@@ -18,7 +18,7 @@ Return true.
 =cut
 
 sub check_upload_tree {
-    my ($todo, $func, $post) = @_;
+    my ($todo, $func, $o_post) = @_;
 
     # Squash double slashes for cosmetics
     $todo =~ s!/+!/!g;
@@ -49,11 +49,11 @@ sub check_upload_tree {
 				}
 			    }
 			    # cleaning
-			    if ($post) {
+			    if ($o_post) {
 				opendir my $submedia_dir, "$todo/$f/$m/$s";
 				foreach my $r (readdir $submedia_dir) {
 				    $r =~ /^\.{1,2}$/ and next;
-				    $post->($todo, $f, $m, $s, $r);
+				    $o_post->($todo, $f, $m, $s, $r);
 				}
 			    }
 			} else {
