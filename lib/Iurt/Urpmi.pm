@@ -541,7 +541,7 @@ sub install_packages {
 	    },
 	)) {
 	plog('DEBUG', "urpmi command failed.");
-	if (!clean_process("$self->{urpmi_command} @to_install", $run->{verbose})) {
+	if (!clean_process("$self->{urpmi_command} @to_install")) {
 	    dump_cache_par($run);
 	    die "FATAL $program_name: Could not have urpmi working !";
 	}
@@ -566,7 +566,7 @@ sub clean_urpmi_process {
     my $program_name = $run->{program_name};
     if (!$run->{chrooted_urpmi}) {
 	my $match = $self->{urpmi_command} or return;
-	if (!clean_process($match, $run->{verbose})) {
+	if (!clean_process($match)) {
 	    dump_cache_par($run);
 	    die "FATAL $program_name: Could not have urpmi working !";
 	}
