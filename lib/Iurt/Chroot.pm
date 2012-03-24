@@ -236,11 +236,6 @@ sub remove_chroot {
     }
 } 
 
-sub clean_mnt {
-    my ($run, $mount_point, $verbose) = @_;
-    return clean($mount_point, "/sbin/fuser", "$sudo /sbin/fuser -k", $verbose);
-}
-
 sub clean_all_chroot_tmp {
     my ($run, $chroot_dir, $prefix) = @_;
 
