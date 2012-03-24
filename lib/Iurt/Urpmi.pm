@@ -78,11 +78,10 @@ sub add_to_local_media {
 }
 
 sub urpmi_command {
-    my ($self, $chroot_tmp, $_luser) = @_;
+    my ($self, $chroot_tmp) = @_;
     my $run = $self->{run};
     my $local_media = $self->{local_media};
 
-    #plog(3, "urpmi_command ($chroot_tmp user $luser)");
     if ($run->{chrooted_urpmi}) { 
 	$self->set_command($chroot_tmp);
 

@@ -742,7 +742,7 @@ if ($run{shell}) {
     add_local_user($chroot_tmp, \%run, $config, $luser, $run{uid}) or die "FATAL $program_name: could not add local user";
 
     #$urpmi->set_command($chroot_tmp);
-    $urpmi->urpmi_command($chroot_tmp, $luser);
+    $urpmi->urpmi_command($chroot_tmp);
 
     $urpmi->install_packages('chroot', $chroot_tmp, $local_spool, \%pack_provide, 'configure', "[ADMIN] installation of urpmi and sudo failed in the chroot $run{my_arch}", { check => 1, maintainer => $config->{admin} }, 'urpmi', 'sudo') or die "FATAL $program_name: could not add urpmi and sudo in the chroot";
     add_sudoers($chroot_tmp, $luser);
@@ -838,7 +838,7 @@ retry:
 		$chroot_tmp, $chroot_tar) or next; 
 	}
 
-	if (!$urpmi->urpmi_command($chroot_tmp, $luser)) {
+	if (!$urpmi->urpmi_command($chroot_tmp)) {
 	    plog('DEBUG', "Creating chroot failed.\nCommand was: $chroot_tmp");
 	    next;
 	}

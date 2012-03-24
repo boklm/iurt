@@ -183,7 +183,7 @@ sub dkms_compile {
     clean_chroot($chroot_tmp, $chroot_tar, $run, $config);
     my %installed;
     # initialize urpmi command
-    $urpmi->urpmi_command($chroot_tmp, $luser);
+    $urpmi->urpmi_command($chroot_tmp);
     # also add macros for root
     add_local_user($chroot_tmp, $run, $config, $luser, $run->{uid});
 
