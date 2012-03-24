@@ -834,7 +834,7 @@ retry:
 	
 	if (!$run{use_old_chroot}) {
 	    $chroot_tmp = create_temp_chroot(\%run, $config,
-		$cache, $chroot_tmp, $chroot_tar, $srpm) or next; 
+		$cache, $chroot_tmp, $chroot_tar) or next; 
 	}
 
 	if (!$urpmi->urpmi_command($chroot_tmp, $luser)) {
