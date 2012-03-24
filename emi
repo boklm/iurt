@@ -240,7 +240,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 }
 
 sub upload_prefix_in_section {
-    my ($prefix, $section, $finish) = @_;
+    my ($prefix, $section, $o_finish) = @_;
     my @packages;
     my ($user) = $prefix =~ /\d{14}\.(\w+)\.\w+\.\d+$/;
     my $target = $pkg_tree{$prefix}{target};
@@ -255,7 +255,7 @@ sub upload_prefix_in_section {
     
     $user ||= $config->{upload_user};
     # FIXME we want to skip all post, we should not hardcode them here
-    my $skip = $finish ? "" : "--skip-post genhdlist2 --skip-post mirror --skip-post clean_rpmsrate";
+    my $skip = $o_finish ? "" : "--skip-post genhdlist2 --skip-post mirror --skip-post clean_rpmsrate";
     my $command = "/usr/bin/perl -I/usr/share/mga-youri-submit/lib /usr/share/mga-youri-submit/bin/youri-submit --verbose --config /etc/youri/submit-upload.conf --define user=$user --define prefix=$prefix --define section=$section $skip $target @packages &> $done/$path/$prefix.youri";
     
     plog('DEBUG', "running $command");
