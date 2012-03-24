@@ -132,10 +132,12 @@ I<$run> is the running environment
 I<%only_clean> only clean the chroot, do not create a new one
 Return true.
 
+IT NEVER ACTUALLY PERFORMED ANYTHING
+
 =cut
 
 sub update_chroot {
-    my ($_chroot, $_chroot_tar, $_run, $_config, $_only_clean, $_only_tar) = @_;
+    my ($_chroot, $_chroot_tar, $_run) = @_;
 
     plog('DEBUG', "update chroot");
 
