@@ -214,6 +214,7 @@ sub dump_cache_par {
     if (!$status) {
 	unlink $filename;
 	link "$filename.tmp.$daydate", $filename;
+	# FIXME: File::lockf isn't use(d) or require(d) and isn't even in the distro
 	File::lockf::ulock($file);
     } else {
 	plog('WARN', "WARNING: locking the cache file $filename failed (status $status $!), try to lock manually");
