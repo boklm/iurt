@@ -235,6 +235,7 @@ sub add_media {
     1;
 }
 
+# UNUSED:
 sub add_packages {
     my ($self, $chroot, $_user, @packages) = @_;
     my $run = $self->{run};
