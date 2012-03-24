@@ -124,28 +124,6 @@ sub clean_chroot {
     1;
 }  
 
-=head2 update_chroot($chroot, $run, $only_clean)
-
-Updates chroot
-I<$chroot> chroot path
-I<$run> is the running environment
-I<%only_clean> only clean the chroot, do not create a new one
-Return true.
-
-IT NEVER ACTUALLY PERFORMED ANYTHING
-
-=cut
-
-sub update_chroot {
-    my ($_chroot, $_chroot_tar, $_run) = @_;
-
-    plog('DEBUG', "update chroot");
-
-#    my $urpmi = $run->{urpmi};
-#    $urpmi->auto_select($chroot);
-
-}
-
 sub dump_rpmmacros {
     my ($run, $config, $file) = @_;
     my $f;
@@ -210,7 +188,6 @@ sub create_temp_chroot {
     plog("Install new chroot");
     plog('DEBUG', "... in $chroot_tmp");
     clean_chroot($chroot_tmp, $chroot_tar, $run, $config) or return;
-    update_chroot($chroot_tmp, $run, $config);
 
     $chroot_tmp;
 }
