@@ -124,7 +124,7 @@ my %archdone;
 #
 
 sub done_func {
-    my ($_todo, $f, $m, $s, $r) = @_;
+    my ($_todo, $_f, $m, $s, $r) = @_;
 
     my $section = "$m/$s";
 
@@ -176,8 +176,8 @@ check_upload_tree(\%run, $todo, \&todo_func,);
 # Decide what should be uploaded
 #
 
-# $targets{$target}{$section}{'arch_finisher'}{$arch}: prefix on which we need to actions to get this arch updated
-# $targets{$target}{$section}{'to_upload'}: list of prefixes to upload
+# $targets{$target}{$section}{arch_finisher}{$arch}: prefix on which we need to actions to get this arch updated
+# $targets{$target}{$section}{to_upload}: list of prefixes to upload
 my %targets;
 
 foreach my $prefix (sort keys %pkg_tree) {
@@ -210,29 +210,29 @@ foreach my $prefix (sort keys %pkg_tree) {
 	    next;
 	}
     }
-    next unless ($ok);
+    next unless $ok;
     
     #
     # All mandatory archs found, mark for upload
     #
     foreach my $section (keys %{$pkg_tree{$prefix}{section}}) {
-	$targets{$target}{$section} ||= {'arch_finisher' => {}, 'is_finisher' => {}, 'to_upload' => []};
+	$targets{$target}{$section} ||= { 'arch_finisher' => {}, 'is_finisher' => {}, 'to_upload' => [] };
 
-	push @{$targets{$target}{$section}{'to_upload'}}, $prefix;
+	push @{$targets{$target}{$section}{to_upload}}, $prefix;
 
 	# We already have found universal finisher in that section, we're fine
-	next if exists $targets{$target}{$section}{'arch_finisher'}{'noarch'};
+	next if exists $targets{$target}{$section}{arch_finisher}{noarch};
 
 	if ($pkg_tree{$prefix}{section}{$section}{arch}{noarch}) {
 	    # This package is noarch, genhdlist for it will touch all archs
-	    $targets{$target}{$section}{'arch_finisher'} = { 'noarch' => $prefix };
+	    $targets{$target}{$section}{arch_finisher} = { 'noarch' => $prefix };
 	} else {
-	    my $has_new_arch = scalar(difference2([ keys %{$pkg_tree{$prefix}{section}{$section}{arch}} ], [ keys %{$targets{$target}{$section}{'arch_finisher'}} ]));
+	    my $has_new_arch = scalar(difference2([ keys %{$pkg_tree{$prefix}{section}{$section}{arch}} ], [ keys %{$targets{$target}{$section}{arch_finisher}} ]));
 	    if ($has_new_arch) {
 		# We need this package to cover the new arch
 		# Set it for all, it may allow getting rid of some others
 		foreach (keys %{$pkg_tree{$prefix}{section}{$section}{arch}}) {
-		    $targets{$target}{$section}{'arch_finisher'}{$_} = $prefix;
+		    $targets{$target}{$section}{arch_finisher}{$_} = $prefix;
 		}
 	    }
 	}
@@ -308,11 +308,11 @@ foreach my $target (keys %targets) {
     foreach my $section (keys %{$targets{$target}}) {
     	my %is_finisher;
 	
-	foreach (values %{$targets{$target}{$section}{'arch_finisher'}}) {
+	foreach (values %{$targets{$target}{$section}{arch_finisher}}) {
 	    $is_finisher{$_} = 1;
 	}
 
-	foreach my $prefix (@{$targets{$target}{$section}{'to_upload'}}) {
+	foreach my $prefix (@{$targets{$target}{$section}{to_upload}}) {
 	    next if $is_finisher{$prefix};
 	    upload_prefix_in_section($prefix, $section);
 	}
@@ -321,7 +321,7 @@ foreach my $target (keys %targets) {
 	    upload_prefix_in_section($prefix, $section, 1);
 	}
 
-	foreach my $prefix (@{$targets{$target}{$section}{'to_upload'}}) {
+	foreach my $prefix (@{$targets{$target}{$section}{to_upload}}) {
     	    my $path = $pkg_tree{$prefix}{section}{$section}{path};
 	    open FOO, ">$done/$path/$prefix.upload" unless -f "$reject/$path/$prefix.youri";
         }

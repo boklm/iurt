@@ -23,7 +23,7 @@
 use strict;
 my $program_name = 'iurt_root_command';
 use Mkcd::Commandline qw(parseCommandLine usage);
-use MDK::Common qw(if_);
+use MDK::Common qw(any if_);
 use File::NCopy qw(copy);
 use Iurt::Util qw(plog_init plog);
 use Cwd 'realpath';
@@ -35,7 +35,7 @@ my $arg = @ARGV;
 my (@params, %run);
 $run{program_name} = $program_name;
 
-my %authorized_modules = ();
+my %authorized_modules;
 my %authorized_rw_bindmounts = (map { $_ => 1 } qw(/proc /dev/pts /var/cache/icecream));
 
 $run{todo} = [];
@@ -203,7 +203,7 @@ sub modprobe {
 	return 0;
     }
     
-    return 1 if grep { /^$module\b/ } read_file("/proc/modules");
+    return 1 if any { /^$module\b/ } read_file("/proc/modules");
 
     system("/sbin/depmod", "-a");
     !system("/sbin/modprobe", "-f", $module);
@@ -373,7 +373,7 @@ sub untar {
 	return;	
     }
     check_path_authorized($file) && check_path_authorized($dir) or return;
-    if (grep { /^-/ } @o_files) {
+    if (any { /^-/ } @o_files) {
 	plog('FAIL', "untar: options forbidden");
 	return;	
     }

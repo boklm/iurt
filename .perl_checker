@@ -23,5 +23,6 @@ MDV::Distribconf::Build
 MIME::Words
 RPM4::Header
 Scalar::Util
+String::Escape
 Text::Wrap
 XSLoader

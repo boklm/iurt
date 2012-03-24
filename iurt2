@@ -77,7 +77,7 @@ $SIG{TERM} = sub {
 };
 
 my $program_name = 'iurt2';
-my $VERSION = '0.6.5';
+
 # sessing parameters
 my $sudo = '/usr/bin/sudo';
 my $arg = @ARGV;
@@ -232,7 +232,7 @@ $run{todo} = [];
 	    }
 
 	    ($srpm, $path) = fileparse(rel2abs($_));
-	    ($srpm =~ /\.src\.rpm$/) or die "FATAL: $_ doesn't look like an SRPM";
+	    $srpm =~ /\.src\.rpm$/ or die "FATAL: $_ doesn't look like an SRPM";
 
 	    if (check_arch($_, $run{my_arch})) {
 		plog('DEBUG', "force build for $2 (from $1)");
@@ -303,13 +303,13 @@ $run{todo} = [];
     [ "", "with", 1, "<flag>",
     "Use specified --with flag with rpm (can be used multiple times)",
     sub {
-	($run{with_flags}) = $run{with_flags} . " --with " . @_[0];
+	$run{with_flags} .= " --with " . $_[0];
 	1;
     }, "Adding specified extra --with parameter to rpm" ],
     [ "", "without", 1, "<flag>",
     "Use specified --without flag with rpm (can be used multiple times)",
     sub {
-	($run{with_flags}) = $run{with_flags} . " --without " . @_[0];
+	$run{with_flags} .= " --without " . $_[0];
 	1;
     }, "Adding specified extra --without parameter to rpm" ],
     # [ short option, long option, # of args, syntax description,
@@ -348,20 +348,19 @@ $run{todo} = [];
     [ "", "icecream", 1, "<procs>", 
     "Enables icecream usage by <procs> procs",
     sub {
-	    $run{icecream} = @_[0];
+	    $run{icecream} = $_[0];
     }, "Enabling icecream usage" ],
 );
 
 open(my $LOG, ">&STDERR");
 
-plog_init($program_name, $run{logfd}||$LOG, 7, 1); # For parsing command line
+plog_init($program_name, $run{logfd} || $LOG, 7, 1); # For parsing command line
 
 # Display version information
 #
 (my $iurt_rev = '$Rev$') =~ s/.*: (\d+).*/$1/;
 (my $iurt_aut = '$Author$') =~ s/.*: (..).*/$1/;
-(my $iurt_dat = '$Date$')
-	=~ s/.*: ([\d-]* [\d:]*) .*/$1/;
+(my $iurt_dat = '$Date$') =~ s/.*: ([\d-]* [\d:]*) .*/$1/;
 plog("MSG", "This is iurt2 revision $iurt_rev-$iurt_aut ($iurt_dat)");
 
 
@@ -373,7 +372,7 @@ foreach my $t (@$todo)  {
 }
 
 # Use the real verbose level
-plog_init($program_name, $run{logfd}||$LOG, $run{verbose}, 1);
+plog_init($program_name, $run{logfd} || $LOG, $run{verbose}, 1);
 
 $run{distro_tag} = $run{distro};
 $run{distro_tag} =~ s,/,-,g;
@@ -508,7 +507,7 @@ my %config_usage = (
     },
     prompt => { 
 	desc => 'Default prompt in the chroot',
-	default => qq{PS1='[\\[\\033[00;33m\\]iurt $run{distro}\\[\\033[00m\\]] \\[\\033[00;31m\\]\\u\\[\\033[00;32m\\]\\h\\[\\033[00m\\]\\w\$ '},
+	default => qq(PS1='[\\[\\033[00;33m\\]iurt $run{distro}\\[\\033[00m\\]] \\[\\033[00;31m\\]\\u\\[\\033[00;32m\\]\\h\\[\\033[00m\\]\\w\$ '),
     },
     repository => {
 	desc => 'Prefix of the repositories',
@@ -562,14 +561,11 @@ if ($run{distro} ne 'cooker') {
 }
 
 my $lock = $run{media};
-my $local; # FIXME: (tv) variable $local assigned, but not read
 if (!$lock && $run{chroot}) {
     $lock = 'chroot';
-    $local = 1;
 }
 if (!$lock && $run{dkms}) {
     $lock = 'dkms';
-    $local = 0;
 }
 $run{lock} = $lock;
 
@@ -739,8 +735,7 @@ if ($df->{per} >= 99) {
 
 if ($run{shell}) {
     if (!$run{use_old_chroot}) {
-	my $chroot_tmp = create_temp_chroot(\%run, $config,
-	$cache, $chroot_tmp, $chroot_tar)
+	create_temp_chroot(\%run, $config, $cache, $chroot_tmp, $chroot_tar)
 	    or die "FATAL $program_name: could not create temporary chroot";
     }
     add_local_user($chroot_tmp, \%run, $config, $luser, $run{uid}) or die "FATAL $program_name: could not add local user";
@@ -803,7 +798,8 @@ my $prev_done = $done;
 do { 
     $rebuild = 0;
     $done = $prev_done;
-    for (my $i; $i < @{$run{todo}}; $i++) {
+    my $i;
+    for ($i; $i < @{$run{todo}}; $i++) {
 	my ($dir, $srpm, $status) = @{$run{todo}[$i]};
 	
 	# CM: Set argv[0] (in the C sense) to something we can easily spot and
@@ -844,7 +840,7 @@ retry:
 	if (!$urpmi->urpmi_command($chroot_tmp, $luser)) {
 	    plog('DEBUG', "Creating chroot failed.\nCommand was: $chroot_tmp");
 	    next;
-	};
+	}
 	$srpm =~ /(.*)-[^-]+-[^-]+\.src\.rpm$/ or next;
 	my ($maintainer, $cc);
 	if (!$run{warn}) {
@@ -862,7 +858,8 @@ retry:
 	add_local_user($chroot_tmp, \%run, $config, $luser, $run{uid}) or next;
 
 	my $old_srpm = $srpm;
-	my ($ret, $srpm, $spec) = $urpmi->recreate_srpm(\%run, $config,
+	my ($ret, $spec);
+	($ret, $srpm, $spec) = $urpmi->recreate_srpm(\%run, $config,
 			$chroot_tmp, $dir, $srpm, $luser, $retry);
 	if ($ret == -1) {
 	    $retry = 1;
@@ -932,7 +929,7 @@ retry:
 		error => "[REBUILD] $srpm from $run{distro_tag} does not build correctly on $run{my_arch}", 
 		logname => "build", 
 		hash => "build_$srpm", 
-		timeout => $config->{build_timeout}{$srpm_name} ? $config->{build_timeout}{$srpm_name} : $config->{build_timeout}{default},
+		timeout => $config->{build_timeout}{$srpm_name} || $config->{build_timeout}{default},
 		srpm => $srpm,
 		debug_mail => $run{debug},
 		cc => $cc, 
@@ -947,7 +944,7 @@ retry:
 			exit();
 		    }
 		    plog('DEBUG', "calling callback for $opt->{hash}");
-		    if ($output =~ /bin\/ld: cannot find -l(\S*)|configure.*error.* (?:-l([^\s]+)|([^\s]+) includes)/) {
+		    if ($output =~ m!/bin/ld: cannot find -l(\S*)|configure.*error.* (?:-l(\S+)|(\S+) includes)!) {
 			my $missing = $1;
 			my @rpm = find_provides(\%run, \%pack_provide, $missing);
 			plog(5, "likely @rpm ($missing-devel) needed to rebuilt $srpm is not in build_requires");
@@ -1037,7 +1034,8 @@ retry:
 	dump_cache_par(\%run) if $run{concurrent_run};
     }
     if ($run{group}) {
-	for (my $i; $i < @{$run{todo}}; $i++) {
+	my $i;
+	for ($i; $i < @{$run{todo}}; $i++) {
 	    my (undef, $srpm) = @{$run{todo}[$i]};
 	    if (!$run{done}{$srpm}) {
 		$rebuild = $urpmi->order_packages(\%provides, $luser);

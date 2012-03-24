@@ -302,7 +302,7 @@ sub get_build_requires {
     $run->{todo_requires} = {};
     plog("get_build_requires");
 
-    my ($u_id, $chroot_tmp) = create_temp_chroot($run, $config, $cache, $run->{chroot_tmp}, $run->{chroot_tar}) or return;
+    my (undef, $chroot_tmp) = create_temp_chroot($run, $config, $cache, $run->{chroot_tmp}, $run->{chroot_tar}) or return;
     add_local_user($chroot_tmp, $run, $config, $luser, $run->{uid}) or return;
     
     my $urpm = new URPM;

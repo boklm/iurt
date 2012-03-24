@@ -55,7 +55,7 @@ sub clean_chroot {
 	open(my $FP, "/proc/mounts") or die $!;
 	my @list = grep { /$chroot/ } <$FP>;
 	close($FP);
-	if ($#list >= 0) {
+	if (@list >= 0) {
 	    # Still referenced
 	    return 1;
 	}
@@ -180,7 +180,6 @@ sub dump_rpmmacros {
 
 sub add_local_user {
     my ($chroot_tmp, $run, $config, $luser, $uid) = @_;
-    my $program_name = $run->{program_name};
 
     # change the builder user to the local user id
     # FIXME it seems that unionfs does not handle well the change of the
@@ -205,10 +204,7 @@ sub add_local_user {
 }
 
 sub create_temp_chroot {
-    my ($run, $config, $cache, $chroot_tmp, $chroot_tar, $o_srpm) = @_;
-
-    my $home = $config->{local_home};
-    my $debug_tag = $run->{debug_tag};
+    my ($run, $config, $_cache, $chroot_tmp, $chroot_tar, $o_srpm) = @_;
 
     plog("Install new chroot");
     plog('DEBUG', "... in $chroot_tmp");
@@ -328,7 +324,7 @@ sub create_chroot {
         sudo($run, $config, '--untar', $chroot_tar, $tmp_chroot, "./var/log/qa");
 
         my $tmp_urpmi = mktemp("$chroot.tmp.XXXXXX");
-        my @installed_pkgs = grep(!/^gpg-pubkey/, chomp_(cat_("$tmp_chroot/var/log/qa")));
+        my @installed_pkgs = grep { !/^gpg-pubkey/ } chomp_(cat_("$tmp_chroot/var/log/qa"));
         my @available_pkgs = chomp_(`urpmq --urpmi-root $tmp_urpmi --use-distrib $run->{urpmi}{distrib_url} --list -f 2>/dev/null`);
         my @removed_pkgs = difference2(\@installed_pkgs, \@available_pkgs);
         rm_rf($tmp_urpmi);

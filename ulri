@@ -718,7 +718,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 		    create_file($lock_file, "$program_name $$", time());
 
                     # Fork to wait for the build to finish
-                    if ((my $fpid = fork()) == 0) {
+                    if (fork() == 0) {
                         local $SIG{ALRM} = sub {
                             # Run ourselves to kill the build
                             exec "ulri";

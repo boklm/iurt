@@ -9,7 +9,7 @@ our @EXPORT = qw(
 );
 
 sub expand_email {
-	my($email, $config) = @_;
+	my ($email, $config) = @_;
 	return $email unless $config->{email_domain};
 	my $name = "";
 	my $addr = $email;
@@ -35,7 +35,7 @@ sub sendmail {
 	if ($cc) {
 		$cc = expand_email($cc, $config);
 		$cc = encode_mimewords($cc);
-		print $MAIL "Cc: $cc\n"
+		print $MAIL "Cc: $cc\n";
 	}
 	print $MAIL "From: $from\n";
 	print $MAIL "Subject: $subject\n";
