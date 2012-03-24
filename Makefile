@@ -23,12 +23,25 @@ install:
 
 tar: dist
 
-dist: dist-svn
+dist:
+	rm -rf ../$(NAME)-$(VERSION).tar*
+	@if [ -e ".svn" ]; then \
+		$(MAKE) dist-svn; \
+	elif [ -e ".git" ]; then \
+		$(MAKE) dist-git; \
+	else \
+		echo "Unknown SCM (not SVN nor GIT)";\
+		exit 1; \
+	fi;
+	$(info $(NAME)-$(VERSION).tar.xz is ready)
 
 dist-svn:
 	svn export -q -rBASE . $(PACKAGE)-$(VERSION)
 	tar cfa $(PACKAGE)-$(VERSION).tar.xz $(PACKAGE)-$(VERSION)
 	rm -rf $(PACKAGE)-$(VERSION)
+
+dist-git:
+	git archive --prefix $(NAME)-$(VERSION)/ HEAD | xz -9 > ../$(NAME)-$(VERSION).tar.xz
 
 clean:
 	rm -rf svn
