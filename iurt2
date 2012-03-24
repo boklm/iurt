@@ -1179,7 +1179,7 @@ sub check_version {
 }
 
 sub check_pid {
-    my ($run, $local) = @_;
+    my ($run) = @_;
     my $hostname = `hostname`;
     chomp $hostname;
     my $pidfile = $run->{pidfile};
@@ -1200,7 +1200,7 @@ sub check_pid {
 	    close $lock2;
 	}
     }
-    if (!$run->{concurrent_run} && !$local) {
+    if (!$run->{concurrent_run}) {
 	opendir my $dir, $run->{pidfile_home};
 	foreach my $f (readdir $dir) {
 	    my ($pid_host) = $f =~ /$pidfile\.pid\.(.*)\.pid$/ or next; 
