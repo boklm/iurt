@@ -23,8 +23,9 @@ install:
 
 tar: dist
 
-dist:
-	rm -fr $(PACKAGE)-$(VERSION)
+dist: dist-svn
+
+dist-svn:
 	svn export -q -rBASE . $(PACKAGE)-$(VERSION)
 	tar cfa $(PACKAGE)-$(VERSION).tar.xz $(PACKAGE)-$(VERSION)
 	rm -rf $(PACKAGE)-$(VERSION)
