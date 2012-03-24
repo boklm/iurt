@@ -183,7 +183,7 @@ sub add_local_user {
 }
 
 sub create_temp_chroot {
-    my ($run, $config, $_cache, $chroot_tmp, $chroot_tar) = @_;
+    my ($run, $config, $chroot_tmp, $chroot_tar) = @_;
 
     plog("Install new chroot");
     plog('DEBUG', "... in $chroot_tmp");

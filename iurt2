@@ -736,7 +736,7 @@ if ($df->{per} >= 99) {
 
 if ($run{shell}) {
     if (!$run{use_old_chroot}) {
-	create_temp_chroot(\%run, $config, $cache, $chroot_tmp, $chroot_tar)
+	create_temp_chroot(\%run, $config, $chroot_tmp, $chroot_tar)
 	    or die "FATAL $program_name: could not create temporary chroot";
     }
     add_local_user($chroot_tmp, \%run, $config, $luser, $run{uid}) or die "FATAL $program_name: could not add local user";
@@ -835,7 +835,7 @@ retry:
 	
 	if (!$run{use_old_chroot}) {
 	    $chroot_tmp = create_temp_chroot(\%run, $config,
-		$cache, $chroot_tmp, $chroot_tar) or next; 
+		$chroot_tmp, $chroot_tar) or next; 
 	}
 
 	if (!$urpmi->urpmi_command($chroot_tmp, $luser)) {
