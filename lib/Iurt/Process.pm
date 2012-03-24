@@ -228,7 +228,7 @@ sub perform_command {
 	if ($kill && $opt{type} ne 'shell') {
 	    $comment = "Command killed after $opt{timeout}s: $command\n";
 	    my ($cmd_to_kill) = $command =~ /sudo(?: chroot \S+)? (.*)/;
-	    clean_process($run, $cmd_to_kill, $run->{verbose});
+	    clean_process($cmd_to_kill, $run->{verbose});
 	} elsif ($pipe) {
 	    $comment = "Command received SIGPIPE: $command\n";
 	    sendmail($config->{admin}, '' ,
@@ -308,7 +308,7 @@ sub perform_command {
 }
 
 sub clean_process {
-    my ($run, $match, $verbose) = @_;
+    my ($match, $verbose) = @_;
     return clean($match, "pgrep -u root -f", "$sudo pkill -9 -u root -f", $verbose);
 }
 
