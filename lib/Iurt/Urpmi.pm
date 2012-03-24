@@ -278,7 +278,7 @@ sub get_local_provides {
     opendir(my $dir, $local_media);
     plog(1, "get local provides ($local_media)");
     require URPM;
-    my $urpm = new URPM;
+    my $urpm = URPM->new;
     foreach my $d (readdir $dir) {
 	$d =~ /\.src\.rpm$/ and next;
 	$d =~ /\.rpm$/ or next;
@@ -304,7 +304,7 @@ sub get_build_requires {
     my (undef, $chroot_tmp) = create_temp_chroot($run, $config, $run->{chroot_tmp}, $run->{chroot_tar}) or return;
     add_local_user($chroot_tmp, $run, $config, $luser, $run->{uid}) or return;
     
-    my $urpm = new URPM;
+    my $urpm = URPM->new;
     foreach my $p (@{$run->{todo}}) {
 	my ($dir, $srpm, $s) = @$p;
 	$self->recreate_srpm($run, $config, $chroot_tmp, $dir, $srpm, $run->{user}) or return;
