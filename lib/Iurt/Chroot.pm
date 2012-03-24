@@ -14,7 +14,6 @@ our @EXPORT = qw(
     clean_chroot_tmp
     clean_all_chroot_tmp
     clean_chroot
-    update_chroot
     dump_rpmmacros
     add_local_user
     create_temp_chroot
