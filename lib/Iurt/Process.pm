@@ -308,11 +308,11 @@ sub perform_command {
 
 sub clean_process {
     my ($match, $verbose) = @_;
-    return clean($match, "pgrep -u root -f", "$sudo pkill -9 -u root -f", $verbose);
+    return clean($match, "pgrep -u root -f", "$sudo pkill -9 -u root -f");
 }
 
 sub clean {
-    my ($var, $cmd, $kill_cmd, $_verbose) = @_;
+    my ($var, $cmd, $kill_cmd) = @_;
 
     plog('DEBUG', "clean command $var");
     $var or die "FATAL: no command given\n.";
