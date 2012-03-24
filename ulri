@@ -282,7 +282,7 @@ check_upload_tree($todo, \&todo_func, \&todo_post);
 # getting already compiled packages
 # The cache should not be needed if the .done file are removed as the same
 # time as the src.rpm in the todo tree
-check_upload_tree($done, \&done_func,);
+check_upload_tree($done, \&done_func);
 
 
 #
