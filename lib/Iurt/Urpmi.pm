@@ -612,7 +612,7 @@ sub recreate_srpm {
     perform_command([ 
 	sub { 
 	    my ($s, $d) = @_; 
-	    sudo($run, $config, '--cp', $s, $d) } , [ "$dir/$srpm", "$chroot_tmp/home/$luser/rpm/SRPMS/" ] ], 
+	    sudo($config, '--cp', $s, $d) } , [ "$dir/$srpm", "$chroot_tmp/home/$luser/rpm/SRPMS/" ] ], 
 	$run, $config, $cache, 
 	type => 'perl',
 	mail => $config->{admin}, 
@@ -699,9 +699,9 @@ sub recreate_srpm {
     my $newfile = "$chroot_tmp/home/$luser/rpm/SRPMS/$prefix$new_srpm";
     if (-f $file && $newfile ne $file) {
 	if (-f $newfile) {
-	    sudo($run, $config, '--rm', $newfile) or die "$program_name: could not delete $newfile ($!)";
+	    sudo($config, '--rm', $newfile) or die "$program_name: could not delete $newfile ($!)";
 	}
-	sudo($run, $config, '--ln', $file, $newfile) or die "$program_name: linking $file to $newfile failed ($!)";
+	sudo($config, '--ln', $file, $newfile) or die "$program_name: linking $file to $newfile failed ($!)";
 	unlink $file;
 	unlink $oldsrpm if $oldsrpm ne $newfile;
     }

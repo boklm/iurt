@@ -281,7 +281,7 @@ sub dkms_compile {
 	    my $rpms = "$chroot_tmp$_/*.rpm";
 	    if (system("cp $rpms $dkms_spool/$media/ &>/dev/null") == 0) {
 		$copied = 1;
-		sudo($run, $config, '--rm', $rpms)
+		sudo($config, '--rm', $rpms)
 		    or plog('ERROR', "ERROR: could not delete dkms packages from $rpms ($!)");
 		last;
 	    }
@@ -334,7 +334,7 @@ sub process_dkms_queue {
 	    #should not be necessary
 	}
 	# should not be necessary to use sudo
-	sudo($run, $config, '--rm', "$dir/$rpm");
+	sudo($config, '--rm', "$dir/$rpm");
 	$cache->{queue}{$srpm} = 1;
     }
     closedir $rpmdir;

@@ -352,7 +352,7 @@ sub kill_for_good {
 }
 
 sub sudo {
-    my ($_run, $config, @arg) = @_;
+    my ($config, @arg) = @_;
 
     #plog("Running $config->{iurt_root_command} @arg");
 

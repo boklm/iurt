@@ -41,13 +41,13 @@ sub clean_chroot {
 
     plog('DEBUG', "clean chroot");
     if (-d $chroot && !$o_only_tar) {
-        sudo($run, $config, "--umount", "$chroot/proc");
-        sudo($run, $config, "--umount", "$chroot/dev/pts");
+        sudo($config, "--umount", "$chroot/proc");
+        sudo($config, "--umount", "$chroot/dev/pts");
 	if ($run->{icecream}) {
-            sudo($run, $config, "--umount", "$chroot/var/cache/icecream");
+            sudo($config, "--umount", "$chroot/var/cache/icecream");
 	}
 	if (-d "$chroot/urpmi_medias/") {
-            sudo($run, $config, "--umount", "$chroot/urpmi_medias");
+            sudo($config, "--umount", "$chroot/urpmi_medias");
 	}
 
 	# Do not run rm if there is something still mounted there
@@ -59,7 +59,7 @@ sub clean_chroot {
 	    return 1;
 	}
 
-	sudo($run, $config, '--rm', '-r', $chroot);
+	sudo($config, '--rm', '-r', $chroot);
     }
 
     return 1 if $o_only_clean;
@@ -74,7 +74,7 @@ sub clean_chroot {
 	return 1;
     }
  
-    sudo($run, $config, '--untar', $chroot_tar, $chroot);
+    sudo($config, '--untar', $chroot_tar, $chroot);
     if (!create_build_chroot($chroot, $chroot_tar, $run, $config)) {
 	plog('ERROR', "Failed to create chroot");
         return;
@@ -84,21 +84,21 @@ sub clean_chroot {
 	plog('ERROR', "Failed to dump macros");
 	return;
     }
-    if (!sudo($run, $config, '--bindmount', "/proc", "$chroot/proc")) {
+    if (!sudo($config, '--bindmount', "/proc", "$chroot/proc")) {
 	plog('ERROR', "Failed to mount proc");
 	return;
     }
-    if (!sudo($run, $config, '--bindmount', "/dev/pts", "$chroot/dev/pts")) {
+    if (!sudo($config, '--bindmount', "/dev/pts", "$chroot/dev/pts")) {
 	plog('ERROR', "Failed to mount dev/pts");
-	sudo($run, $config, "--umount", "$chroot/proc");
+	sudo($config, "--umount", "$chroot/proc");
 	return;
     }
     if ($run->{icecream}) {
 	system("$sudo mkdir -p $chroot/var/cache/icecream");
-	if (!sudo($run, $config, '--bindmount', "/var/cache/icecream", "$chroot/var/cache/icecream")) {
+	if (!sudo($config, '--bindmount', "/var/cache/icecream", "$chroot/var/cache/icecream")) {
 	    plog('ERROR', "Failed to mount var/cache/icecream");
-	    sudo($run, $config, "--umount", "$chroot/proc");
-	    sudo($run, $config, "--umount", "$chroot/dev/pts");
+	    sudo($config, "--umount", "$chroot/proc");
+	    sudo($config, "--umount", "$chroot/dev/pts");
 	    return;
 	}
     }
@@ -109,13 +109,13 @@ sub clean_chroot {
 	    my $mount_point = "$chroot/urpmi_medias";
 	    my $url = $rep;
 	    $url =~ s!^file://!!;
-	    sudo($run, $config, '--mkdir', '-p', $mount_point);
-	    if (!sudo($run, $config, '--bindmount', $url, $mount_point)) {
+	    sudo($config, '--mkdir', '-p', $mount_point);
+	    if (!sudo($config, '--bindmount', $url, $mount_point)) {
 		plog('ERROR', "Failed to mount $url on $mount_point");
-		sudo($run, $config, "--umount", "$chroot/proc");
-		sudo($run, $config, "--umount", "$chroot/dev/pts");
+		sudo($config, "--umount", "$chroot/proc");
+		sudo($config, "--umount", "$chroot/dev/pts");
 		if ($run->{icecream}) {
-		    sudo($run, $config, "--umount", "$chroot/var/cache/icecream");
+		    sudo($config, "--umount", "$chroot/var/cache/icecream");
 		}
 		return;
 	    }
@@ -168,7 +168,7 @@ sub dump_rpmmacros {
     print $f join "\n", @{$run->{rpmmacros}} if defined $run->{rpmmacros};
     close $f;
 
-    my $ret = sudo($run, $config, '--cp', $tmpfile, $file);
+    my $ret = sudo($config, '--cp', $tmpfile, $file);
     unlink $tmpfile;
 
     if (!$ret) {
@@ -188,7 +188,7 @@ sub add_local_user {
     # if (system(qq|sudo chroot $chroot_tmp usermod -u $run->{uid} builder|)) {
     
     if ($uid) {
-	if (!sudo($run, $config, "--useradd", $chroot_tmp, $luser, $uid)) {
+	if (!sudo($config, "--useradd", $chroot_tmp, $luser, $uid)) {
 	    plog('ERROR', "ERROR: setting userid $uid to $luser in " .
 		"$chroot_tmp failed, checking the chroot");
 	    check_build_chroot($run->{chroot_path}, $run->{chroot_tar}, $run,
@@ -308,7 +308,7 @@ sub create_chroot {
     my $rebuild;
     my $clean = sub {
 	plog("Remove temporary chroot tarball");
-	sudo($run, $config, '--rm', '-r', $tmp_chroot, $tmp_tar);
+	sudo($config, '--rm', '-r', $tmp_chroot, $tmp_tar);
     };
 
     plog('NOTIFY', "creating chroot");
@@ -322,7 +322,7 @@ sub create_chroot {
         link $chroot_tar, $tmp_tar or die "FATAL: could not initialize chroot ($!)\n";
 
         plog('DEBUG', "decompressing /var/log/qa from $chroot_tar in $tmp_chroot");
-        sudo($run, $config, '--untar', $chroot_tar, $tmp_chroot, "./var/log/qa");
+        sudo($config, '--untar', $chroot_tar, $tmp_chroot, "./var/log/qa");
 
         my $tmp_urpmi = mktemp("$chroot.tmp.XXXXXX");
         my @installed_pkgs = grep { !/^gpg-pubkey/ } chomp_(cat_("$tmp_chroot/var/log/qa"));
@@ -350,7 +350,7 @@ sub create_chroot {
 	    if (!build_chroot($run, $config, $tmp_chroot, $chroot_tar, $opt)) {
 		plog('NOTIFY', "creating chroot failed.");
 		$clean->();
-		sudo($run, $config, '--rm', '-r', $chroot, $chroot_tar);
+		sudo($config, '--rm', '-r', $chroot, $chroot_tar);
 		return;
 	    }
     }
@@ -360,9 +360,9 @@ sub create_chroot {
 	plog('NOTIFY', "recreate chroot");
 	my $urpmi = $run->{urpmi};
 	$urpmi->clean_urpmi_process($chroot);
-	sudo($run, $config, '--rm', '-r', $chroot, $tmp_tar);
+	sudo($config, '--rm', '-r', $chroot, $tmp_tar);
 	mkdir_p $chroot;
-	sudo($run, $config, '--untar', $chroot_tar, $chroot);
+	sudo($config, '--untar', $chroot_tar, $chroot);
 	plog('NOTIFY', "chroot recreated in $chroot_tar (live in $chroot)");
     }
     
@@ -377,15 +377,15 @@ sub build_chroot {
     plog('DEBUG', "building the chroot with "
 			. join(', ', @{$opt->{packages}}));
 
-    sudo($run, $config, "--mkdir", "-p", "$tmp_chroot/dev/pts",
+    sudo($config, "--mkdir", "-p", "$tmp_chroot/dev/pts",
 		"$tmp_chroot/etc/sysconfig", "$tmp_chroot/proc",
 	        "$tmp_chroot/var/lib/rpm");
 
     #system(qq($sudo sh -c "echo 127.0.0.1 localhost > $tmp_chroot/etc/hosts"));
     # warly some program perform a gethostbyname(hostname) and in the cluster the 
     # name are not resolved via DNS but via /etc/hosts
-    sudo($run, $config, '--cp', "/etc/hosts", "$tmp_chroot/etc/");
-    sudo($run, $config, '--cp', "/etc/resolv.conf", "$tmp_chroot/etc/");
+    sudo($config, '--cp', "/etc/hosts", "$tmp_chroot/etc/");
+    sudo($config, '--cp', "/etc/resolv.conf", "$tmp_chroot/etc/");
 
     # install chroot
     my $urpmi = $run->{urpmi};
@@ -423,32 +423,32 @@ sub build_chroot {
     }
 
     # remove files used by --urpmi-root
-    sudo($run, $config, "--rm", "$tmp_chroot/etc/urpmi/urpmi.cfg");
-    sudo($run, $config, "--rm", "$tmp_chroot/var/lib/urpmi/*");
+    sudo($config, "--rm", "$tmp_chroot/etc/urpmi/urpmi.cfg");
+    sudo($config, "--rm", "$tmp_chroot/var/lib/urpmi/*");
 
     system("rpm -qa --root $tmp_chroot --qf '\%{NAME}-\%{VERSION}-\%{RELEASE}.\%{ARCH}\n' | sort > $tmp_chroot/tmp/qa");
-    sudo($run, $config, "--cp", "$tmp_chroot/tmp/qa", "$tmp_chroot/var/log/qa");
+    sudo($config, "--cp", "$tmp_chroot/tmp/qa", "$tmp_chroot/var/log/qa");
     unlink("$tmp_chroot/tmp/qa");
 
-    sudo($run, $config, "--mkdir", "$tmp_chroot/etc/skel/rpm/$_")
+    sudo($config, "--mkdir", "$tmp_chroot/etc/skel/rpm/$_")
       foreach "", qw(RPMS BUILD SPECS SRPMS SOURCES tmp);
 
     #
     # CM: Choose a sub-500 uid to prevent collison with $luser
     #
-    sudo($run, $config, "--useradd", $tmp_chroot, 'builder', 499);
+    sudo($config, "--useradd", $tmp_chroot, 'builder', 499);
 
     # FIXME: <mrl> Be careful! Damn ugly hack right below!
-    sudo($run, $config, "--rm", "$tmp_chroot/var/lib/rpm/__db*");
-    sudo($run, $config, "--umount", "$tmp_chroot/proc");
-    sudo($run, $config, "--umount", "$tmp_chroot/dev/pts");
+    sudo($config, "--rm", "$tmp_chroot/var/lib/rpm/__db*");
+    sudo($config, "--umount", "$tmp_chroot/proc");
+    sudo($config, "--umount", "$tmp_chroot/dev/pts");
     if ($run->{icecream}) {
-	sudo($run, $config, "--umount", "$tmp_chroot/var/cache/icecream");
+	sudo($config, "--umount", "$tmp_chroot/var/cache/icecream");
     }
     if (-d "$tmp_chroot/urpmi_medias/") {
-	sudo($run, $config, "--umount", "$tmp_chroot/urpmi_medias");
+	sudo($config, "--umount", "$tmp_chroot/urpmi_medias");
     }
-    return sudo($run, $config, "--tar", $chroot_tar, $tmp_chroot);
+    return sudo($config, "--tar", $chroot_tar, $tmp_chroot);
 }
 
 sub check_build_chroot {
@@ -467,7 +467,7 @@ sub check_chroot {
 
     if (time -$stat[9] > 604800) {
 	plog('WARN', "chroot tarball too old, force rebuild");
-	sudo($run, $config, '--rm', '-r', $chroot, $chroot_tar);
+	sudo($config, '--rm', '-r', $chroot, $chroot_tar);
     }
     create_chroot($chroot, $chroot_tar, $run, $config, $opt);
 }
