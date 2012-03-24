@@ -13,7 +13,6 @@ our @EXPORT = qw(
     kill_for_good
     clean_process
     check_pid
-    clean
     perform_command
     sudo
 );
