@@ -745,7 +745,7 @@ if ($run{shell}) {
     $urpmi->urpmi_command($chroot_tmp, $luser);
 
     $urpmi->install_packages('chroot', $chroot_tmp, $local_spool, \%pack_provide, 'configure', "[ADMIN] installation of urpmi and sudo failed in the chroot $run{my_arch}", { check => 1, maintainer => $config->{admin} }, 'urpmi', 'sudo') or die "FATAL $program_name: could not add urpmi and sudo in the chroot";
-    add_sudoers(\%run, $chroot_tmp, $luser);
+    add_sudoers($chroot_tmp, $luser);
     if ($run{shell}) {
 	plog('NOTIFY', "dumping to a chrooted shell into $chroot_tmp");
 	exec $sudo, $config->{iurt_root_command}, '--chroot', $chroot_tmp, '/bin/su', '-', $luser, '-c', "$config->{prompt} bash";
@@ -913,7 +913,7 @@ retry:
 	my $command = "rpmbuild --rebuild $run{with_flags} /home/$luser/rpm/SRPMS/$srpm";
 	if ($run{stop}) {
 	    $urpmi->install_packages('chroot', $chroot_tmp, $local_spool, \%pack_provide, 'configure', "[ADMIN] installation of urpmi and sudo failed in the chroot $run{my_arch}", { check => 1, maintainer => $config->{admin} }, 'urpmi', 'sudo');
-	    add_sudoers(\%run, $chroot_tmp, $luser);
+	    add_sudoers($chroot_tmp, $luser);
 	    $command = "rpmbuild -b$run{stop} /home/$luser/rpm/SPECS/$spec";
 	}
 
@@ -1381,7 +1381,7 @@ sub search_packages {
 }    
 
 sub add_sudoers {
-    my ($run, $chroot, $user) = @_;
+    my ($chroot, $user) = @_;
     my $tmpfile = "/tmp/sudoers";
     my $file = "$chroot/etc/sudoers";
     my $f;
