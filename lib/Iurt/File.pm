@@ -18,7 +18,7 @@ Return true.
 =cut
 
 sub check_upload_tree {
-    my ($_run, $todo, $func, $post) = @_;
+    my ($todo, $func, $post) = @_;
 
     # Squash double slashes for cosmetics
     $todo =~ s!/+!/!g;

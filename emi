@@ -168,8 +168,8 @@ sub todo_func {
     }
 }
 
-check_upload_tree(\%run, $done, \&done_func, \&done_post);
-check_upload_tree(\%run, $todo, \&todo_func,);
+check_upload_tree($done, \&done_func, \&done_post);
+check_upload_tree($todo, \&todo_func,);
 
 
 #
