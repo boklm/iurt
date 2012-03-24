@@ -76,7 +76,7 @@ sub plog_init {
 
 	$plog_color = 0 unless -t fileno $plog_file;
 
-	foreach (@plog_prefix) { $_ .= "[$plog_name] " }
+	$_ .= "[$plog_name] " foreach @plog_prefix;
 
 	if ($plog_color) {
 		$plog_prefix[1] .= "$plog_ctr{bold}$plog_ctr{red}";
