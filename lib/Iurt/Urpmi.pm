@@ -6,7 +6,7 @@ use File::Basename;
 use File::NCopy qw(copy);
 use MDV::Distribconf::Build;
 use Iurt::Chroot qw(add_local_user create_temp_chroot check_build_chroot);
-use Iurt::Process qw(perform_command clean clean_process sudo);
+use Iurt::Process qw(perform_command clean_process sudo);
 use Iurt::Config qw(dump_cache_par get_maint get_package_prefix);
 use Iurt::Util qw(plog);
 
