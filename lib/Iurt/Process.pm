@@ -86,6 +86,45 @@ sub check_pid {
     $pidfile;
 }
 
+
+sub fork_to_monitor {
+    my ($run, $config, $logfile, %opt) = @_;
+    my $parent_pid = $$;
+    my $pid = fork();
+    #close STDIN; close STDERR;close STDOUT;
+    my $tot_time;
+    if (!$pid) {
+	plog('DEBUG', "Forking to monitor log size");
+	$run->{main} = 0;
+	local $SIG{ALRM} = sub { exit() };
+	$tot_time += sleep 30;
+	my $size_limit = $config->{log_size_limit};
+	$size_limit =~ s/k/000/i;
+	$size_limit =~ s/M/000000/i;
+	$size_limit =~ s/G/000000000/i;
+	while ($tot_time < $opt{timeout}) {
+	    my (@stat) = stat $logfile;
+	    if ($stat[7] > $size_limit) {
+		# FIXME: we left runaway processes (eg: urpmi)
+		plog('ERROR', "ERROR: killing current command because of log size exceeding limit ($stat[7] > $config->{log_size_limit})");
+		kill 14, "-$parent_pid";
+		exit();
+	    }
+	    my $df = df $opt{log};
+	    if ($df->{per} >= 99) {
+		# FIXME: we left runaway processes (eg: urpmi)
+		plog('ERROR', "ERROR: killing current command because running out of disk space at $opt{log} (only $df->{bavail}KB left)");
+		kill 14, "-$parent_pid";
+		exit();
+	    }
+	    $tot_time += sleep 30;
+	}
+	exit();
+    } else {
+	$pid;
+    }
+}
+
 =head2 perform_command($command, $run, $config, $cache,  %opt)
 
 Run a command and check various running parameters such as log size, timeout...
@@ -139,38 +178,7 @@ sub perform_command {
 	    $logfile = "$opt{log}/$opt{logname}-$try.$run->{run}.log";
 	}
 	if ($opt{log}) {
-	    my $parent_pid = $$;
-	    $pid = fork();
-	    #close STDIN; close STDERR;close STDOUT;
-	    my $tot_time;
-	    if (!$pid) {
-		plog('DEBUG', "Forking to monitor log size");
-		$run->{main} = 0;
-		local $SIG{ALRM} = sub { exit() };
-		$tot_time += sleep 30;
-		my $size_limit = $config->{log_size_limit};
-		$size_limit =~ s/k/000/i;
-		$size_limit =~ s/M/000000/i;
-		$size_limit =~ s/G/000000000/i;
-		while ($tot_time < $opt{timeout}) {
-		    my (@stat) = stat $logfile;
-		    if ($stat[7] > $size_limit) {
-			# FIXME: we left runaway processes (eg: urpmi)
-			plog('ERROR', "ERROR: killing current command because of log size exceeding limit ($stat[7] > $config->{log_size_limit})");
-			kill 14, "-$parent_pid";
-			exit();
-		    }
-		    my $df = df $opt{log};
-		    if ($df->{per} >= 99) {
-			# FIXME: we left runaway processes (eg: urpmi)
-			plog('ERROR', "ERROR: killing current command because running out of disk space at $opt{log} (only $df->{bavail}KB left)");
-			kill 14, "-$parent_pid";
-			exit();
-		    }
-		    $tot_time += sleep 30;
-		}
-		exit();
-	    }
+	    $pid = fork_to_monitor($run, $config, $logfile, %opt);
 	}
 
 	eval {
