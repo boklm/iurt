@@ -43,9 +43,7 @@ sub check_pid {
     if (-f $pidfile)  {
 	my (@stat) = stat $pidfile;
 
-	open(my $test_PID, $pidfile);
-	my $pid = <$test_PID>;
-	close $test_PID;
+	my $pid = cat_($pidfile);
 
 	if (!$pid) {
 	    plog('ERROR', "ERROR: invalid pidfile ($pid), should be <pid>");
@@ -78,11 +76,8 @@ sub check_pid {
 	}
     }
 
-    open my $PID, ">$pidfile"
-	or die "FATAL: can't open pidfile $pidfile for writing";
+    output($pidfile, $$);
 
-    print $PID $$;
-    close $PID;
     $pidfile;
 }
 
