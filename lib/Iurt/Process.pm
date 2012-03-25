@@ -203,9 +203,7 @@ sub perform_command {
 	$err = 0 if any { $_ == $err } @{$opt{error_ok}};
 
 	# kill pid watching log file size
-	if ($pid) {
-	    kill_for_good($pid);
-	}
+	kill_for_good($pid) if $pid;
 
 	if ($@) {	# timed out
 	    # propagate unexpected errors
