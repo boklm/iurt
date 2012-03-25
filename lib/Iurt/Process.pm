@@ -184,6 +184,27 @@ sub handle_wait_regexp {
     $inc;
 }
 
+sub generate_comment {
+    my ($run, $config, $output, $command, $comment, $pipe, $kill, %opt) = @_;
+    if ($kill && $opt{type} ne 'shell') {
+	$comment = "Command killed after $opt{timeout}s: $command\n";
+	my ($cmd_to_kill) = $command =~ /sudo(?: chroot \S+)? (.*)/;
+	clean_process($cmd_to_kill);
+    } elsif ($pipe) {
+	$comment = "Command received SIGPIPE: $command\n";
+	sendmail($config->{admin}, '' ,
+		 "$opt{hash} on $run->{my_arch} for $run->{media}: broken pipe",
+		 "$comment\n$output", "Iurt the build bot <$config->{admin}>",
+		 $opt{debug_mail}, $config);
+    } else {
+	if ($opt{type} eq 'shell') {
+	    $comment = "Command failed: $command\n";
+	} else {
+	    $comment = "Command failed: $opt{type}\n";
+	}
+    }
+}
+
 =head2 perform_command($command, $run, $config, $cache,  %opt)
 
 Run a command and check various running parameters such as log size, timeout...
@@ -292,23 +313,7 @@ sub perform_command {
 	    $call_ret == -2 and return 0;
 	}
 
-	if ($kill && $opt{type} ne 'shell') {
-	    $comment = "Command killed after $opt{timeout}s: $command\n";
-	    my ($cmd_to_kill) = $command =~ /sudo(?: chroot \S+)? (.*)/;
-	    clean_process($cmd_to_kill);
-	} elsif ($pipe) {
-	    $comment = "Command received SIGPIPE: $command\n";
-	    sendmail($config->{admin}, '' ,
-		"$opt{hash} on $run->{my_arch} for $run->{media}: broken pipe",
-		"$comment\n$output", "Iurt the build bot <$config->{admin}>",
-		$opt{debug_mail}, $config);
-	} else {
-	    if ($opt{type} eq 'shell') {
-		$comment = "Command failed: $command\n";
-	    } else {
-		$comment = "Command failed: $opt{type}\n";
-	    }
-	}
+	$comment = generate_comment($run, $config, $output, $command, $comment, $pipe, $kill, %opt);
 
 	# Maybe this has to be put before all the commands altering the
 	# $output var
