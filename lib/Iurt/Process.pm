@@ -302,7 +302,13 @@ sub perform_command {
 		    }
 		    plog('ERROR', "ERROR: $wr !");
 
-		    sendmail($config->{admin}, '' , "$opt{hash} on $run->{my_arch} for $run->{media}: could not proceed", "$wr\n\n$comment\n$output", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail}, $config) if $opt{wait_mail};
+		    if ($opt{wait_mail}) {
+			sendmail($config->{admin}, '' ,
+				 "$opt{hash} on $run->{my_arch} for $run->{media}: could not proceed",
+				 "$wr\n\n$comment\n$output",
+				 "Iurt the rebuild bot <$config->{admin}>",
+				 $opt{debug_mail}, $config);
+		    }
 		}
 	    }
 	}
