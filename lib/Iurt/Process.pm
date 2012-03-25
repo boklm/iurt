@@ -125,6 +125,42 @@ sub fork_to_monitor {
     }
 }
 
+sub handle_command_error {
+    my ($run, $config, $cache, $log_msg, $comment, $fulloutput, %opt) = @_;
+    plog('ERROR', $log_msg);
+
+    if ($opt{log} && $config->{log_url}) {
+	$comment = qq(See $config->{log_url}/$run->{distro_tag}/$run->{my_arch}/$run->{media}/log/$opt{srpm}/\n\n$comment);
+    }
+
+    my $out;
+    if (length $fulloutput < 10000) {
+	$out = $fulloutput;
+    } else { 
+	$out = "Message too big, see http link for details\n";
+    }
+
+    if ($opt{mail} && $config->{sendmail} && !$config->{no_mail}{$opt{mail}}) {
+	if (! ($cache->{warning}{$opt{hash}}{$opt{mail}} % $opt{freq})) {
+	    my $cc = join ',', grep { !$config->{no_mail}{$_} } split ',', $opt{cc};
+	    sendmail($opt{mail}, $cc,  $opt{error} , "$comment\n$out", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail}, $config);
+	} elsif ($config->{admin}) {
+	    sendmail($config->{admin}, '' , $opt{error}, "$comment\n$out", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail}, $config);
+	}
+    }
+    $cache->{warning}{$opt{hash}}{$opt{mail}}++;
+    plog('FAIL', $comment);
+    plog('INFO', "--------------- Command failed, full output follows ---------------");
+    plog('INFO', $fulloutput);
+    plog('INFO', "--------------- end of command output ---------------");
+
+    if ($opt{die}) {
+	dump_cache_par($run);
+	die "FATAL: $opt{error}.";
+    }
+    return 0;
+}
+
 =head2 perform_command($command, $run, $config, $cache,  %opt)
 
 Run a command and check various running parameters such as log size, timeout...
@@ -281,39 +317,8 @@ sub perform_command {
     }
 
     if (!$call_ret || $kill || $err || $opt{error_regexp} && $fulloutput =~ /$opt{error_regexp}/) {
-
-	plog('ERROR', "ERROR: call_ret=$call_ret kill=$kill err=$err ($opt{error_regexp})");
-
-	if ($opt{log} && $config->{log_url}) {
-	    $comment = qq(See $config->{log_url}/$run->{distro_tag}/$run->{my_arch}/$run->{media}/log/$opt{srpm}/\n\n$comment);
-	}
-
-	my $out;
-	if (length $fulloutput < 10000) {
-	    $out = $fulloutput;
-	} else { 
-	    $out = "Message too big, see http link for details\n";
-	}
-
-	if ($opt{mail} && $config->{sendmail} && !$config->{no_mail}{$opt{mail}}) {
-	    if (! ($cache->{warning}{$opt{hash}}{$opt{mail}} % $opt{freq})) {
-		my $cc = join ',', grep { !$config->{no_mail}{$_} } split ',', $opt{cc};
-		sendmail($opt{mail}, $cc,  $opt{error} , "$comment\n$out", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail}, $config);
-	    } elsif ($config->{admin}) {
-		sendmail($config->{admin}, '' , $opt{error}, "$comment\n$out", "Iurt the rebuild bot <$config->{admin}>", $opt{debug_mail}, $config);
-	    }
-	}
-	$cache->{warning}{$opt{hash}}{$opt{mail}}++;
-	plog('FAIL', $comment);
-	plog('INFO', "--------------- Command failed, full output follows ---------------");
-	plog('INFO', $fulloutput);
-	plog('INFO', "--------------- end of command output ---------------");
-
-	if ($opt{die}) {
-	    dump_cache_par($run);
-	    die "FATAL: $opt{error}.";
-	}
-	return 0;
+	my $msg = "ERROR: call_ret=$call_ret kill=$kill err=$err ($opt{error_regexp})";
+	handle_command_error($run, $config, $cache, $msg, $comment, $fulloutput, %opt);
     }
     1;
 }
