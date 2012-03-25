@@ -3,6 +3,7 @@ package Iurt::Process;
 use strict;
 use base qw(Exporter);
 use List::MoreUtils qw(any);
+use MDK::Common qw(cat_);
 use Filesys::Df qw(df);
 use Iurt::Mail qw(sendmail);
 use Iurt::Config qw(dump_cache_par);
@@ -260,10 +261,7 @@ sub perform_command {
 
 	# Keep the run first on the harddrive so that one can check the
 	# command status tailing it
-	if ($opt{log} && open my $log, $logfile) {
-	    local $/;
-	    $output = <$log>;
-	}
+	$output = cat_($logfile) if $opt{log};
 
 	$fulloutput .= $output;
 	if (ref $opt{callback}) {
