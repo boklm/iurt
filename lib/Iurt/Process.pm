@@ -2,8 +2,7 @@ package Iurt::Process;
 
 use strict;
 use base qw(Exporter);
-use List::MoreUtils qw(any);
-use MDK::Common qw(cat_ max);
+use MDK::Common qw(any cat_ max);
 use Filesys::Df qw(df);
 use Iurt::Mail qw(sendmail);
 use Iurt::Config qw(dump_cache_par);
