@@ -3,7 +3,7 @@ package Iurt::Process;
 use strict;
 use base qw(Exporter);
 use List::MoreUtils qw(any);
-use MDK::Common qw(cat_);
+use MDK::Common qw(cat_ max);
 use Filesys::Df qw(df);
 use Iurt::Mail qw(sendmail);
 use Iurt::Config qw(dump_cache_par);
@@ -250,8 +250,7 @@ sub perform_command {
     my $call_ret = 1;
     my ($err, $pid, $try);
     my $logfile = "$opt{log}/$opt{logname}.$run->{run}.log";
-    my $max_retry = $config->{max_command_retry} < $retry ?
-			$retry : $config->{max_command_retry};
+    my $max_retry = max($config->{max_command_retry}, $retry);
 
     while ($retry) {
 	$try++;
