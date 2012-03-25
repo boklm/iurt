@@ -247,6 +247,7 @@ sub add_packages {
 		timeout => 300, 
 		freq => 1,
 		retry => 2,
+		# FIXME: SEGV is _NOT_ OK:
 		error_ok => [ 11 ],
 		debug_mail => $run->{debug},
 		error_regexp => 'cannot be installed',
