@@ -198,6 +198,8 @@ sub perform_command {
 	};
 
 	$err = $?;
+	my $perl_err = $@;
+
 	# <mrl> Log it before any changes on it.
 	plog('DEBUG', "Command exited with $err.");
 	$err = 0 if any { $_ == $err } @{$opt{error_ok}};
@@ -205,9 +207,9 @@ sub perform_command {
 	# kill pid watching log file size
 	kill_for_good($pid) if $pid;
 
-	if ($@) {	# timed out
+	if ($perl_err) {	# timed out
 	    # propagate unexpected errors
-	    die "FATAL: unexpected signal ($@)" unless $@ eq "alarm\n";
+	    die "FATAL: unexpected signal ($perl_err)" unless $perl_err eq "alarm\n";
 	}
 
 	# Keep the run first on the harddrive so that one can check the
