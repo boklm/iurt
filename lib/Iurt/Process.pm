@@ -247,14 +247,14 @@ sub perform_command {
 
     my $retry = $opt{retry} || 1;
     my $call_ret = 1;
-    my ($err, $pid, $try);
+    my ($err, $try);
     my $logfile = "$opt{log}/$opt{logname}.$run->{run}.log";
     my $max_retry = max($config->{max_command_retry}, $retry);
 
     while ($retry) {
 	$try++;
 	$logfile = "$opt{log}/$opt{logname}-$try.$run->{run}.log" if $opt{retry} > 1;
-	$pid = fork_to_monitor($run, $config, $logfile, %opt) if $opt{log};
+	my $pid = $opt{log} ? fork_to_monitor($run, $config, $logfile, %opt) : 0;
 
 	eval {
 	    # handle timeout:
