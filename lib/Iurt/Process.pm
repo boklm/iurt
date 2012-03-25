@@ -97,6 +97,7 @@ sub fork_to_monitor {
     if (!$pid) {
 	plog('DEBUG', "Forking to monitor log size");
 	$run->{main} = 0;
+	# So that we don't get killed by alarm set by parent:
 	local $SIG{ALRM} = sub { exit() };
 	$tot_time += sleep 30;
 	my $size_limit = $config->{log_size_limit};
@@ -262,6 +263,7 @@ sub perform_command {
 	}
 
 	eval {
+	    # handle timeout:
 	    local $SIG{ALRM} = sub {
 		print "Timeout!\n";
 		$kill = 1;
@@ -270,6 +272,7 @@ sub perform_command {
 
 	    alarm $opt{timeout};
 
+	    # actually execute it:
 	    if ($opt{type} eq 'perl') {
 		plog('DEBUG', "perl command");
 		$command->[0](@{$command->[1]});
@@ -282,6 +285,7 @@ sub perform_command {
 		    $output = `$command 2>&1`;
 		}
 	    }
+	    # completed before timeout, disable it:
 	    alarm 0;
 	};
 
@@ -292,6 +296,8 @@ sub perform_command {
 
 	# <mrl> Log it before any changes on it.
 	plog('DEBUG', "Command exited with $err.");
+
+	# some errors might be OK:
 	$err = 0 if any { $_ == $err } @{$opt{error_ok}};
 
 	# kill pid watching log file size
