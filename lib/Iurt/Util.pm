@@ -67,10 +67,9 @@ my %plog_level = (
 );
 
 sub plog_init {
-        $plog_name = shift;
-        $plog_file = shift;
-        $plog_level = shift @_ || 9999;
-        $plog_color = shift @_ || 0;
+        ($plog_name, $plog_file, $o_plog_level, $o_plog_color) = @_;
+        $plog_level ||= 9999;
+        $plog_color ||= 0;
 
 	$plog_level = 9999 if $ENV{PLOG_DEBUG};
 
