@@ -162,6 +162,28 @@ sub handle_command_error {
     return 0;
 }
 
+sub handle_wait_regexp {
+    my ($run, $config, $comment, $output, %opt) = @_;
+    my $inc;
+    foreach my $wr (keys %{$opt{wait_regexp}}) {
+	if ($output =~ /$wr/m) {
+	    if (ref $opt{wait_regexp}{$wr}) {
+		$inc = $opt{wait_regexp}{$wr}(\%opt, $output);
+	    }
+	    plog('ERROR', "ERROR: $wr !");
+
+	    if ($opt{wait_mail}) {
+		sendmail($config->{admin}, '' ,
+			 "$opt{hash} on $run->{my_arch} for $run->{media}: could not proceed",
+			 "$wr\n\n$comment\n$output",
+			 "Iurt the rebuild bot <$config->{admin}>",
+			 $opt{debug_mail}, $config);
+	    }
+	}
+    }
+    $inc;
+}
+
 =head2 perform_command($command, $run, $config, $cache,  %opt)
 
 Run a command and check various running parameters such as log size, timeout...
@@ -293,22 +315,7 @@ sub perform_command {
 
 	my $inc;
 	if ($opt{wait_regexp}) {
-	    foreach my $wr (keys %{$opt{wait_regexp}}) {
-		if ($output =~ /$wr/m) {
-		    if (ref $opt{wait_regexp}{$wr}) {
-			$inc = $opt{wait_regexp}{$wr}(\%opt, $output);
-		    }
-		    plog('ERROR', "ERROR: $wr !");
-
-		    if ($opt{wait_mail}) {
-			sendmail($config->{admin}, '' ,
-				 "$opt{hash} on $run->{my_arch} for $run->{media}: could not proceed",
-				 "$wr\n\n$comment\n$output",
-				 "Iurt the rebuild bot <$config->{admin}>",
-				 $opt{debug_mail}, $config);
-		    }
-		}
-	    }
+	    $inc = handle_wait_regexp($run, $config, $comment, $output, %opt);
 	}
 
 	if ($inc && $try < $max_retry) {
