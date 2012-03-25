@@ -255,12 +255,8 @@ sub perform_command {
 
     while ($retry) {
 	$try++;
-	if ($opt{retry} > 1) {
-	    $logfile = "$opt{log}/$opt{logname}-$try.$run->{run}.log";
-	}
-	if ($opt{log}) {
-	    $pid = fork_to_monitor($run, $config, $logfile, %opt);
-	}
+	$logfile = "$opt{log}/$opt{logname}-$try.$run->{run}.log" if $opt{retry} > 1;
+	$pid = fork_to_monitor($run, $config, $logfile, %opt) if $opt{log};
 
 	eval {
 	    # handle timeout:
