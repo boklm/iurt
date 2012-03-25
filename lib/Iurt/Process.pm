@@ -155,13 +155,15 @@ sub perform_command {
 		while ($tot_time < $opt{timeout}) {
 		    my (@stat) = stat $logfile;
 		    if ($stat[7] > $size_limit) {
-			plog('WARN', "WARNING: killing current command because of log size exceeding limit ($stat[7] > $config->{log_size_limit})");
+			# FIXME: we left runaway processes (eg: urpmi)
+			plog('ERROR', "ERROR: killing current command because of log size exceeding limit ($stat[7] > $config->{log_size_limit})");
 			kill 14, "-$parent_pid";
 			exit();
 		    }
 		    my $df = df $opt{log};
 		    if ($df->{per} >= 99) {
-			plog('WARN', "WARNING: killing current command because running out of disk space at $opt{log} (only $df->{bavail}KB left)");
+			# FIXME: we left runaway processes (eg: urpmi)
+			plog('ERROR', "ERROR: killing current command because running out of disk space at $opt{log} (only $df->{bavail}KB left)");
 			kill 14, "-$parent_pid";
 			exit();
 		    }
