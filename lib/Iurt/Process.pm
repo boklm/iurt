@@ -197,7 +197,9 @@ sub perform_command {
 	    alarm 0;
 	};
 
+	# external program exit code
 	$err = $?;
+	# perl exception:
 	my $perl_err = $@;
 
 	# <mrl> Log it before any changes on it.
