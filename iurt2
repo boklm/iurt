@@ -670,14 +670,14 @@ if ($run{use_cache}) {
 $run{daydate} = $daydate;
 plog('DEBUG', "using $run{run} as chroot extension");
 $run{user} ||= $ENV{USER};
-die "Iurt should not be executed as root." if $run{user} eq "root";
+die "Iurt should not be executed as root.\n" if $run{user} eq "root";
 $run{uid} = getpwnam $run{user};
 
 plog('DEBUG', "using local user $run{user}, id $run{uid}");
 my $luser = $run{user} || 'builder';
 
 check_sudo_access()
-    or die "FATAL: you need to have sudo access on $config->{iurt_root_command} to run $program_name";
+    or die "FATAL: you need to have sudo access on $config->{iurt_root_command} to run $program_name\n";
 
 my $debug_tag = $run{debug} && '_debug';
 $run{debug_tag} = $debug_tag;
