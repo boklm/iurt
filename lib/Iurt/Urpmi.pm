@@ -591,6 +591,7 @@ sub fix_srpm_name {
 	$srpm;
 }
 
+# return ("exit_code", srpm, spec)
 sub recreate_srpm {
     my ($_self, $run, $config, $chroot_tmp, $dir, $srpm, $luser, $b_retry) = @_;
 # recreate a new srpm for buildarch condition in the spec file
@@ -667,7 +668,7 @@ sub recreate_srpm {
 
     # Return if we can't regenerate srpm
     #
-    return (0, ,) unless $ret;
+    return 0 unless $ret;
 
     # CM: was: foreach my $file (readdir $dir)
     #     The above line returned entries in a strange order in my test
