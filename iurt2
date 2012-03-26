@@ -1269,7 +1269,7 @@ sub check_pid {
 
 sub check_media {
     my ($run, $cache, $config, $srpm_version, $wrong_rpm, $provides, $pack_provide, $maint) = @_;
-# We could rely on only parsing the synthesis, hoping that they are correct, however this scan is very fast, so...
+# We could rely only on parsing the synthesis, hoping that they are correct, however this scan is very fast, so...
     if (!$run->{build_all}) {
 	foreach my $subdir (@{$config->{all_media}{$run->{media}}}) {
 	    my $rpms_dir = "$config->{repository}/$run->{distro}/$run->{my_arch}/media/$run->{media}/$subdir/";
