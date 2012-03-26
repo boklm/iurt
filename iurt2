@@ -1292,9 +1292,9 @@ sub check_media {
 	    if (-f $synthesis_file) {
 		plog("Parsing $synthesis_file");
 		if (open my $syn, "zcat $synthesis_file |") { 
-		    my @prov;
                     local $_;
 		    while (<$syn>) {
+			my @prov;
 			if (/^\@provides@(.*)/) {
 			    foreach my $p (split '@', $1) {
                                 if ($p =~ /([^[]+)(?:\[(.*)\])?/g) {
@@ -1309,7 +1309,6 @@ sub check_media {
 			    foreach (@prov) {
 				$pack_provide->{$_} = $name;
 			    }
-			    @prov = ();
 			}
 		    }
 		} else {
