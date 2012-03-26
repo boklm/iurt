@@ -1292,7 +1292,7 @@ sub check_media {
 	    my $synthesis_file = "$config->{repository}/$run->{distro}/$run->{my_arch}/media/$m/$subdir/media_info/synthesis.hdlist.cz";
 	    if (-f $synthesis_file) {
 		plog("Parsing $synthesis_file");
-		# FIXME: this is reinventing the whell and will fail if default compressor change:
+		# FIXME: this is reinventing the wheel and will fail if default compressor change:
 		if (open my $syn, "zcat $synthesis_file |") { 
                     local $_;
 		    while (<$syn>) {
