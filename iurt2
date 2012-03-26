@@ -55,6 +55,7 @@ use Filesys::Df qw(df);
 use POSIX;
 
 
+# copied from drakx' standalone:
 sub bug_handler {
     my ($error, $is_signal) = @_;
 
