@@ -416,6 +416,65 @@ sub are_installed {
     system("rpm -q --root $chroot @pkgs") == 0;
 }
 
+
+sub _install_callback {
+    my ($run, $admin, $cache, $opt, $output, $pack_provide, $title) = @_;
+    plog('DEBUG', "calling callback for $opt->{hash}");
+
+    # 20060614
+    # it seems the is needed urpmi error is due to something else (likely a
+    # database corruption error).	    
+    # my @missing_deps = $output =~ /(?:(\S+) is needed by )|(?:\(due to unsatisfied ([^[ ]*)(?: (.*)|\[(.*)\])?\))/g;
+    #
+
+    my @missing_deps = $output =~ /([^ \n]+) \(due to unsatisfied ([^[ \n]*)(?: ([^\n]*)|\[([^\n]*)\])?\)/g;
+
+    # <mrl> 20071106 FIXME: This should not be needed anymore
+    # as it seems that rpm db corruption is making urpmi
+    # returning false problem on deps installation, try
+    # to compile anyway
+
+    if (!@missing_deps) {
+        plog('DEBUG', 'missing_deps is empty, aborting.');
+        plog('DEBUG', "output had: __ $output __");
+        return 1;
+    }
+
+    while (my $missing_package = shift @missing_deps) {
+        my $missing_deps = shift @missing_deps;
+        my $version = shift @missing_deps;
+        my $version2 = shift @missing_deps;
+        $version ||= $version2 || 0;
+        my $p = $pack_provide->{$missing_deps} || $missing_deps;
+        my ($missing_package_name, $first_maint);
+        if ($missing_package !~ /\.src$/) {
+            ($first_maint, $missing_package_name) = get_maint($run, $missing_package);
+            plog(5, "likely $missing_package_name need to be rebuilt ($first_maint)");
+        } else {
+            $missing_package = '';
+        }
+
+        my ($other_maint) = get_maint($run, $p);
+        plog('FAIL', "missing dep: $missing_deps ($other_maint) missing_package $missing_package ($first_maint)");
+        $run->{status}{$title} = 'missing_dep';
+
+        my $maintainer = $opt->{maintainer};
+        $opt->{mail} = $maintainer || $admin;
+
+        # remember what is needed, and do not try to
+        # recompile until it is available
+
+        if ($missing_package) {
+            $opt->{error} = "[MISSING] $missing_deps, needed by $missing_package to build $title, is not available on $run->{my_arch} (rebuild $missing_package?)";
+            $cache->{needed}{$title}{$missing_deps} = { package => $missing_package , version => $version, maint => $first_maint || $other_maint || $maintainer };
+        } else {
+            $opt->{error} = "[MISSING] $missing_deps, needed to build $title, is not available on $run->{my_arch}";
+            $cache->{needed}{$title}{$missing_deps} = { package => $missing_package , version => $version, maint => $maintainer || $other_maint };
+        }
+    } 
+    0;
+}
+
 sub install_packages {
     my ($self, $title, $chroot_tmp, $local_spool, $pack_provide, $log, $error, $opt, @packages) = @_;
 
@@ -474,63 +533,10 @@ sub install_packages {
 		'database locked' => \&wait_urpmi, 
 	    }, 
 	    log => $log_spool,
-	    callback => sub { 
-		my ($opt, $output) = @_;
-		plog('DEBUG', "calling callback for $opt->{hash}");
-
-# 20060614
-# it seems the is needed urpmi error is due to something else (likely a
-# database corruption error).	    
-# my @missing_deps = $output =~ /(?:(\S+) is needed by )|(?:\(due to unsatisfied ([^[ ]*)(?: (.*)|\[(.*)\])?\))/g;
-#
-
-		my @missing_deps = $output =~ /([^ \n]+) \(due to unsatisfied ([^[ \n]*)(?: ([^\n]*)|\[([^\n]*)\])?\)/g;
-
-		# <mrl> 20071106 FIXME: This should not be needed anymore
-		# as it seems that rpm db corruption is making urpmi
-		# returning false problem on deps installation, try
-		# to compile anyway
-
-		if (!@missing_deps) {
-		    plog('DEBUG', 'missing_deps is empty, aborting.');
-		    plog('DEBUG', "output had: __ $output __");
-		    return 1;
-		}
-
-		while (my $missing_package = shift @missing_deps) {
-		    my $missing_deps = shift @missing_deps;
-		    my $version = shift @missing_deps;
-		    my $version2 = shift @missing_deps;
-		    $version ||= $version2 || 0;
-		    my $p = $pack_provide->{$missing_deps} || $missing_deps;
-		    my ($missing_package_name, $first_maint);
-		    if ($missing_package !~ /\.src$/) {
-			($first_maint, $missing_package_name) = get_maint($run, $missing_package);
-			plog(5, "likely $missing_package_name need to be rebuilt ($first_maint)");
-		    } else {
-			$missing_package = '';
-		    }
-
-		    my ($other_maint) = get_maint($run, $p);
-		    plog('FAIL', "missing dep: $missing_deps ($other_maint) missing_package $missing_package ($first_maint)");
-		    $run->{status}{$title} = 'missing_dep';
-
-		    my $maintainer = $opt->{maintainer};
-		    $opt->{mail} = $maintainer || $config->{admin};
-
-		    # remember what is needed, and do not try to
-		    # recompile until it is available
-
-		    if ($missing_package) {
-			$opt->{error} = "[MISSING] $missing_deps, needed by $missing_package to build $title, is not available on $run->{my_arch} (rebuild $missing_package?)";
-			$cache->{needed}{$title}{$missing_deps} = { package => $missing_package , version => $version, maint => $first_maint || $other_maint || $maintainer };
-		    } else {
-			$opt->{error} = "[MISSING] $missing_deps, needed to build $title, is not available on $run->{my_arch}";
-			$cache->{needed}{$title}{$missing_deps} = { package => $missing_package , version => $version, maint => $maintainer || $other_maint };
-		    }
-		} 
-		0;
-	    },
+	    callback => sub {
+                my ($opt, $output) = @_;
+                _install_callback($run, $config->{admin}, $cache, $opt, $output, $pack_provide, $title);
+            },
 	)) {
 	plog('DEBUG', "urpmi command failed.");
 	if (!clean_process("$self->{urpmi_command} @to_install")) {
