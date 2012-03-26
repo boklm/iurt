@@ -15,7 +15,7 @@ our @EXPORT = qw(
     sput
 );
 
-my ($plog_name, $plog_file, $plog_level, $plog_color);
+my ($plog_name, $plog_file, $o_plog_level, $o_plog_color);
 
 =head2 LOG HELPERS
 
@@ -68,16 +68,16 @@ my %plog_level = (
 
 sub plog_init {
         ($plog_name, $plog_file, $o_plog_level, $o_plog_color) = @_;
-        $plog_level ||= 9999;
-        $plog_color ||= 0;
+        $o_plog_level ||= 9999;
+        $o_plog_color ||= 0;
 
-	$plog_level = 9999 if $ENV{PLOG_DEBUG};
+	$o_plog_level = 9999 if $ENV{PLOG_DEBUG};
 
-	$plog_color = 0 unless -t fileno $plog_file;
+	$o_plog_color = 0 unless -t fileno $plog_file;
 
 	$_ .= "[$plog_name] " foreach @plog_prefix;
 
-	if ($plog_color) {
+	if ($o_plog_color) {
 		$plog_prefix[1] .= "$plog_ctr{bold}$plog_ctr{red}";
 		$plog_prefix[2] .= "$plog_ctr{bold}$plog_ctr{yellow}";
 		$plog_prefix[3] .= $plog_ctr{bold};
@@ -106,9 +106,9 @@ level set with plog_init().
 sub plog {
 	my $level = $#_ ? shift : 'INFO';
 	$level = $plog_level{$level};
-	my ($p, $e) = ($plog_prefix[$level], ($plog_color ? $plog_ctr{normal} : ""));
+	my ($p, $e) = ($plog_prefix[$level], ($o_plog_color ? $plog_ctr{normal} : ""));
 	
-	if ($plog_level >= $level) {
+	if ($o_plog_level >= $level) {
 		flock($plog_file, LOCK_EX);
 		seek($plog_file, 0, SEEK_END);
 		print $plog_file "$p@_$e\n";
