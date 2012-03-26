@@ -1297,10 +1297,10 @@ sub check_media {
 		    while (<$syn>) {
 			if (/^\@provides@(.*)/) {
 			    foreach my $p (split '@', $1) {
-                       if ($p =~ /([^[]+)(?:\[(.*)\])?/g) {
-                           push @prov, $1;
-                           $provides->{$1} = $2 || 1;
-                       }
+                                if ($p =~ /([^[]+)(?:\[(.*)\])?/g) {
+                                    push @prov, $1;
+                                    $provides->{$1} = $2 || 1;
+                                }
 			    }
 			} elsif (/\@info\@([^@]+)@/) {
 			    my $p = $1;
