@@ -675,15 +675,6 @@ sub recreate_srpm {
     #
     return 0 unless $ret;
 
-    # CM: was: foreach my $file (readdir $dir)
-    #     The above line returned entries in a strange order in my test
-    #     system, such as
-    #      .. 
-    #      cowsay-3.03-11mdv2007.1.src.rpm
-    #      cowsay-3.03-11mdv2007.0.src.rpm
-    #      .
-    #     assigning '.' to $new_rpm. Now sorting the output.
-
     # we can not ask rpm the generated srpm name 
     # we can not rely on build time (one of the src.rpm may have been built on a machine with wrong time)
     # let's say that if we have several one, we want the non original one
