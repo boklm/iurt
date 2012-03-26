@@ -419,7 +419,6 @@ sub are_installed {
 sub install_packages {
     my ($self, $title, $chroot_tmp, $local_spool, $pack_provide, $log, $error, $opt, @packages) = @_;
 
-    my $maintainer = $opt->{maintainer};
     my $run = $self->{run};
     my $config = $self->{config};
     my $cache = $run->{cache};
@@ -516,6 +515,7 @@ sub install_packages {
 		    plog('FAIL', "missing dep: $missing_deps ($other_maint) missing_package $missing_package ($first_maint)");
 		    $run->{status}{$title} = 'missing_dep';
 
+		    my $maintainer = $opt->{maintainer};
 		    $opt->{mail} = $maintainer || $config->{admin};
 
 		    # remember what is needed, and do not try to
