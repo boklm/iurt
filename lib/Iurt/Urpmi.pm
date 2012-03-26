@@ -549,8 +549,7 @@ sub install_packages {
     if ($ok && (!@rpm || are_installed($chroot_tmp, @rpm))) {
 	plog("installation successful");
 	$ok = 1;
-    }
-    else {
+    } else {
 	plog(1, "ERROR: Failed to install initial packages");
 	$ok = 0;
     }
