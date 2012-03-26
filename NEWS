@@ -1,0 +1,101 @@
+0.6.7 (unreleased)
+- better error messages when running as root or w/o sudo
+- kill unused/untested features
+- make it load the needed File::lockf module
+- simplified code
+
+0.6.6-1.r3553
+- accept synthesis files with less than 1000 packages
+- kill unionfs support
+- lock the log file when writing to allow sharing it
+- do not use --buildrequires for non src rpms
+
+0.6.6-1.r3264
+- catch chroot creation failures
+- really fix the race, collect .done before .rpm, as some may arrive
+  between the two traversals
+- make it really work with multiple packages...
+- use urpmi --buildrequires for srpms
+
+0.6.6:
+- fix a race
+- keep successful build logs (mga#668)
+- ulri: sort links in mails
+
+0.6.5-0.r2556
+- Set packager tag to "user <user>"
+- Send emails to user@<domain>
+- Use mageia maintainers database
+- Update to latest svn:
+ - Use a different directory for each arch on build machine, avoid problems when both arch of the same package are built on the same node at the same time
+ - Fix section extraction
+- stop installing suggests
+- allow giving additional macros to iurt
+- handle building for multiple sections
+- add missing arch compat cases for arm
+- give up chroot creation when untar fails
+
+0.6.5-0.r877
+
+0.6.5-0.r855
+- use mga-youri-submit
+- stop using mdv-youri-core
+
+
+0.6.5-0.r720
+- always use basesystem-minimal instead of basesystem
+- install meta-task first for prefer.vendor.list to be used
+- say where disk space is lacking
+- upload packages in submission order
+- when building chroot, do not use --distrib but use media from
+  base_media in config
+
+0.6.5-0.r683
+- iurt:
+  o always use basesystem-minimal instead of basesystem
+  o when building chroot, do not use --distrib but use media from
+    base_media in config
+  o ignore gpg-pubkey packages in installed packages list (boklm)
+  o backport a one-liner fix from mdv: "it should say where it lacks
+    disk space" (bogdano, tv)
+- emi: Upload packages in submission order (pterjan)
+
+0.6.5-0.r351
+- do not succeed if we only get src.rpm as result
+- have a different lock for ulri and emi, they do not need to be
+  sync-ed more than with .done
+
+
+0.6.4-7.r320
+- typo fix
+
+0.6.4-7.r319
+- have only one instance of the bot running per host at a time, even
+  if they are building for different arch
+
+
+
+0.6.4-7.r312
+- avoid concurrent emi processes
+- check for rpmbuild binary, not just rpm
+- do not hardcode mdk user
+- do not resolve hostname in http repository address, using IP address
+  would break vhosts, and we copy resolv.conf in the chroot anyway
+- fail early if chroot creation fails
+- fix a minor fd leak
+- remove basesystem_media_root, basesystem_media, and
+  use_system_distrib config options, they have no use now that we
+  don't need a repository tree to check if chroo
+- remove src.rpm from done in case of failure
+- set 0440 permissions to tmp file before copying it to sudoers
+- use urpmq --list to find available basesystem package versions
+- x86_64 hosts can now build i586 packages
+
+
+0.6.4-7.r122
+- add --tar, --untar --umount & --urpmi options
+- clean user creation
+- do not run old rpm --rebuilddb "fix", rpm is OK now
+- kill some unused features (cache, ...)
+- use config file from /etc/iurt
+- use rpm --root instead of chrooting rpm
