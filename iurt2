@@ -1306,9 +1306,7 @@ sub check_media {
 			    my $p = $1;
 			    my ($name) = $p =~ /(.*)-[^-]+-[^-]+\./;
 			    $provides->{$p} = 1;
-			    foreach (@prov) {
-				$pack_provide->{$_} = $name;
-			    }
+			    $pack_provide->{$_} = $name foreach @prov;
 			}
 		    }
 		} else {
