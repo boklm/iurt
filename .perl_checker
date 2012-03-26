@@ -15,6 +15,7 @@ File::Path
 File::Slurp
 File::Sync
 File::Temp
+Filesys::Df
 IO::Compress::Gzip
 IO::Handle
 IO::Uncompress::Gunzip
