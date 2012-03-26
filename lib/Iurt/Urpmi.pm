@@ -22,15 +22,6 @@ sub new {
     my $run = $self->{run};
 
     if ($run->{chrooted_urpmi}) {
-	#my ($host) = $run->{chrooted_urpmi}{rooted_media} =~ m,(?:file|http|ftp)://([^/]*),;
-	#my ($_name, $_aliases, $_addrtype, $_length, @addrs) = gethostbyname($host);
-        #
-	#my $ip = join('.', unpack('C4', $addrs[0]));
-        #
-	#$ip =~ /\d+\.\d+\.\d+\.\d+/
-	#	or die "FATAL: could not resolve $host ip address";
-        #
-	#$run->{chrooted_urpmi}{rooted_media} =~ s/$host/$ip/;
 	$run->{chrooted_media} = $run->{chrooted_urpmi}{rooted_media} .
 			"/$run->{distro}/$run->{my_arch}";
 
