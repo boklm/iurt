@@ -4,7 +4,7 @@ use strict;
 use base qw(Exporter);
 use MDV::Distribconf::Build;
 use Iurt::Chroot qw(clean_chroot add_local_user dump_rpmmacros);
-use Iurt::Config qw(get_maint get_prefix dump_cache init_cache);
+use Iurt::Config qw(get_maint get_prefix dump_cache);
 use Iurt::Mail qw(sendmail);
 use File::NCopy qw(copy);
 use Iurt::Process qw(sudo);

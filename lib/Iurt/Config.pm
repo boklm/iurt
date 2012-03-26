@@ -15,7 +15,6 @@ our @EXPORT = qw(
     get_date
     dump_cache
     dump_cache_par
-    init_cache
     get_maint
     get_date
     get_prefix
@@ -122,30 +121,6 @@ sub get_package_prefix {
     my ($prefix1) = $rpm =~ /^(\d{14}\.\w+\.\w+\.\d+)_/;
     my ($prefix2) = $rpm =~ /^(\@\d+:)/;
     "$prefix1$prefix2";
-}
-=head2 init_cache($run, $config)
-
-Create a string based on the current date and time
-I<%run> is the current running options
-I<%config> is the current configuration values
-Initialize the cache
-
-=cut
-
-sub init_cache {
-    my ($run, $config, $empty) = @_;
-    my $program_name = $run->{program_name};
-    my $cachefile = "$config->{cache_home}/$program_name.cache";
-    my $cache;
-    if (-f $cachefile) {
-	plog('DEBUG', "loading cache file $cachefile");
-	$cache = eval(cat_($cachefile)) or print "FATAL $program_name: could not load cache $cachefile ($!)\n";
-    } else {
-	$cache = $empty;
-    }
-    $run->{cachefile} = $cachefile;
-    $run->{cache} = $cache;
-    $cache;
 }
 
 =head2 dump_cache($run, $config)
