@@ -105,8 +105,9 @@ sub urpmi_command {
 		}
 	    }
 	} else {
-	    if (!add_media($self, $chroot_tmp, 'Main', "--distrib $run->{chrooted_media}")) {
-		if (!add_media($self, $chroot_tmp, 'Main', "--wget --distrib $run->{chrooted_media}")) {
+            # FIXME Do not hardcode Core
+	    if (!add_media($self, $chroot_tmp, 'Core', "--distrib $run->{chrooted_media}")) {
+		if (!add_media($self, $chroot_tmp, 'Core', "--wget --distrib $run->{chrooted_media}")) {
 		    $run->{chrooted_urpmi} = 0;
 		    plog('ERROR', "Failed to add media $run->{chrooted_media}. Disabling chrooted_urpmi.");
 		    return;
