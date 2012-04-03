@@ -384,6 +384,7 @@ sub build_chroot {
     sudo($config, "--rm", "$tmp_chroot/etc/urpmi/urpmi.cfg");
     sudo($config, "--rm", "$tmp_chroot/var/lib/urpmi/*");
 
+    # rpm is not running as root and cannot directly write to $tmp_chroot/var/log/qa
     system("rpm -qa --root $tmp_chroot --qf '\%{NAME}-\%{VERSION}-\%{RELEASE}.\%{ARCH}\n' | sort > $tmp_chroot/tmp/qa");
     sudo($config, "--cp", "$tmp_chroot/tmp/qa", "$tmp_chroot/var/log/qa");
     unlink("$tmp_chroot/tmp/qa");
