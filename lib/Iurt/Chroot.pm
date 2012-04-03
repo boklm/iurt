@@ -156,9 +156,8 @@ sub add_local_user {
     if ($uid) {
 	if (!sudo($config, "--useradd", $chroot_tmp, $luser, $uid)) {
 	    plog('ERROR', "ERROR: setting userid $uid to $luser in " .
-		"$chroot_tmp failed, checking the chroot");
-	    check_build_chroot($run->{chroot_path}, $run->{chroot_tar}, $run,
-		$config) or return;
+		"$chroot_tmp failed");
+	    return;
 	}
     } else {
 	# the program has been launch as root, setting the home to /home/root for compatibility
