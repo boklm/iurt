@@ -307,20 +307,18 @@ sub create_chroot {
     }
 
     if ($rebuild) {
-	    if (!build_chroot($run, $config, $tmp_chroot, $chroot_tar, $opt)) {
-		plog('NOTIFY', "creating chroot failed.");
-		$clean->();
-		sudo($config, '--rm', '-r', $chroot, $chroot_tar);
-		return;
-	    }
+	sudo($config, '--rm', '-r', $chroot);
+	if (!build_chroot($run, $config, $tmp_chroot, $chroot_tar, $opt)) {
+	    plog('NOTIFY', "creating chroot failed.");
+	    $clean->();
+	    sudo($config, '--rm', '-r', $chroot_tar);
+	    return;
+	} 
     }
 
-    if (!-d $chroot || $rebuild) {
+    if (!-d $chroot) {
 	plog('DEBUG', "recreate chroot $chroot");
 	plog('NOTIFY', "recreate chroot");
-	my $urpmi = $run->{urpmi};
-	$urpmi->clean_urpmi_process($chroot);
-	sudo($config, '--rm', '-r', $chroot);
 	mkdir_p $chroot;
 	sudo($config, '--untar', $chroot_tar, $chroot);
 	plog('NOTIFY', "chroot recreated in $chroot_tar (live in $chroot)");
