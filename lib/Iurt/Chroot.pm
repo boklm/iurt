@@ -273,14 +273,35 @@ sub create_build_chroot {
 			{ packages => $config->{basesystem_packages} });
 }
 
+sub check_chroot_need_update {
+    my ($tmp_chroot, $run, $config) = @_;
+
+    my @installed_pkgs = grep { !/^gpg-pubkey/ } chomp_(cat_("$tmp_chroot/var/log/qa"));
+    my @available_pkgs = chomp_(`urpmq --use-distrib $run->{urpmi}{distrib_url} --list -f 2>/dev/null`);
+    my @removed_pkgs = difference2(\@installed_pkgs, \@available_pkgs);
+
+    if (@installed_pkgs) {
+        if (@removed_pkgs) {
+            plog('DEBUG', "changed packages: @removed_pkgs");
+            plog('NOTIFY', "Rebuilding chroot tarball");
+            return 1;
+        } else {
+            plog('NOTIFY', "chroot tarball is already up-to-date");
+	    return 0;
+        }
+    } else {
+        plog('DEBUG', "can't open $tmp_chroot/var/log/qa");
+        plog('ERROR', "can't check chroot, recreating");
+        return 1;
+    }
+}
 sub create_chroot {
     my ($chroot, $chroot_tar, $run, $config, $opt) = @_;
-    my $tmp_tar = mktemp("$chroot_tar.tmp.XXXXXX");
     my $tmp_chroot = mktemp("$chroot.tmp.XXXXXX");
     my $rebuild;
     my $clean = sub {
-	plog("Remove temporary chroot tarball");
-	sudo($config, '--rm', '-r', $tmp_chroot, $tmp_tar);
+	plog("Remove temporary chroot");
+	sudo($config, '--rm', '-r', $tmp_chroot);
     };
 
     plog('NOTIFY', "creating chroot");
@@ -291,31 +312,9 @@ sub create_chroot {
         plog("rebuild chroot tarball");
         $rebuild = 1;
     } else {
-        link $chroot_tar, $tmp_tar or die "FATAL: could not initialize chroot ($!)\n";
-
         plog('DEBUG', "decompressing /var/log/qa from $chroot_tar in $tmp_chroot");
         sudo($config, '--untar', $chroot_tar, $tmp_chroot, "./var/log/qa");
-
-        my $tmp_urpmi = mktemp("$chroot.tmp.XXXXXX");
-        my @installed_pkgs = grep { !/^gpg-pubkey/ } chomp_(cat_("$tmp_chroot/var/log/qa"));
-        my @available_pkgs = chomp_(`urpmq --urpmi-root $tmp_urpmi --use-distrib $run->{urpmi}{distrib_url} --list -f 2>/dev/null`);
-        my @removed_pkgs = difference2(\@installed_pkgs, \@available_pkgs);
-        rm_rf($tmp_urpmi);
-
-        if (@installed_pkgs) {
-            if (@removed_pkgs) {
-                plog('DEBUG', "changed packages: @removed_pkgs");
-                plog('NOTIFY', "Rebuilding chroot tarball");
-                $rebuild = 1;
-            } else {
-                plog('NOTIFY', "chroot tarball is already up-to-date");
-                link $tmp_tar, $chroot_tar;
-            }
-        } else {
-            plog('DEBUG', "can't open $tmp_chroot/var/log/qa");
-            plog('ERROR', "can't check chroot, recreating");
-            $rebuild = 1;
-        }
+        $rebuild = check_chroot_need_update($tmp_chroot, $run, $config);
     }
 
     if ($rebuild) {
@@ -332,7 +331,7 @@ sub create_chroot {
 	plog('NOTIFY', "recreate chroot");
 	my $urpmi = $run->{urpmi};
 	$urpmi->clean_urpmi_process($chroot);
-	sudo($config, '--rm', '-r', $chroot, $tmp_tar);
+	sudo($config, '--rm', '-r', $chroot);
 	mkdir_p $chroot;
 	sudo($config, '--untar', $chroot_tar, $chroot);
 	plog('NOTIFY', "chroot recreated in $chroot_tar (live in $chroot)");
