@@ -308,12 +308,12 @@ sub create_chroot {
 
     if ($rebuild) {
 	sudo($config, '--rm', '-r', $chroot);
-	if (!build_chroot($run, $config, $tmp_chroot, $chroot_tar, $opt)) {
+	if (!build_chroot($run, $config, $tmp_chroot, $opt)) {
 	    plog('NOTIFY', "creating chroot failed.");
 	    $clean->();
-	    sudo($config, '--rm', '-r', $chroot_tar);
 	    return;
 	} 
+	sudo($config, "--tar", $chroot_tar, $tmp_chroot);
     }
 
     if (!-d $chroot) {
@@ -330,7 +330,7 @@ sub create_chroot {
 }
 
 sub build_chroot {
-    my ($run, $config, $tmp_chroot, $chroot_tar, $opt) = @_;
+    my ($run, $config, $tmp_chroot, $opt) = @_;
 
     plog('DEBUG', "building the chroot with "
 			. join(', ', @{$opt->{packages}}));
@@ -407,7 +407,8 @@ sub build_chroot {
     if (-d "$tmp_chroot/urpmi_medias/") {
 	sudo($config, "--umount", "$tmp_chroot/urpmi_medias");
     }
-    return sudo($config, "--tar", $chroot_tar, $tmp_chroot);
+
+    1;
 }
 
 sub check_build_chroot {
