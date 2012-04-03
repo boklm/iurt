@@ -64,9 +64,6 @@ sub clean_chroot {
 
     return 1 if $o_only_clean;
 
-    mkdir $chroot;
-
-    sudo($config, '--untar', $chroot_tar, $chroot);
     if (!create_build_chroot($chroot, $chroot_tar, $run, $config)) {
 	plog('ERROR', "Failed to create chroot");
         return;
