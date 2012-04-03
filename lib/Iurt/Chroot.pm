@@ -20,7 +20,6 @@ our @EXPORT = qw(
     remove_chroot
     create_chroot
     create_build_chroot
-    check_chroot
     check_build_chroot
 );
     
@@ -414,13 +413,6 @@ sub build_chroot {
 sub check_build_chroot {
     my ($chroot, $chroot_tar, $run, $config) = @_;
 
-    check_chroot($chroot, $chroot_tar, $run, $config,
-		{ packages => $config->{basesystem_packages} });
-}
-
-sub check_chroot {
-    my ($chroot, $chroot_tar, $run, $config, $opt) = @_;
-
     plog('DEBUG', "checking basesystem tar");
     
     my (@stat) = stat $chroot_tar;
@@ -429,7 +421,7 @@ sub check_chroot {
 	plog('WARN', "chroot tarball too old, force rebuild");
 	sudo($config, '--rm', '-r', $chroot, $chroot_tar);
     }
-    create_chroot($chroot, $chroot_tar, $run, $config, $opt);
+    create_build_chroot($chroot, $chroot_tar, $run, $config);
 }
 
 1;
