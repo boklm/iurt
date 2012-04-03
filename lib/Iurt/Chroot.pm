@@ -37,10 +37,10 @@ Return true.
 =cut
 
 sub clean_chroot {
-    my ($chroot, $chroot_tar, $run, $config, $o_only_clean, $o_only_tar) = @_;
+    my ($chroot, $chroot_tar, $run, $config, $o_only_clean) = @_;
 
     plog('DEBUG', "clean chroot");
-    if (-d $chroot && !$o_only_tar) {
+    if (-d $chroot) {
         sudo($config, "--umount", "$chroot/proc");
         sudo($config, "--umount", "$chroot/dev/pts");
 	if ($run->{icecream}) {
@@ -66,14 +66,6 @@ sub clean_chroot {
 
     mkdir $chroot;
 
-    # various integrity checking
-    if ($o_only_tar
-	&& -f "$chroot/home/builder/.rpmmacros"
-	&& -d "$chroot/home/builder"
-	&& -d "$chroot/proc") {
-	return 1;
-    }
- 
     sudo($config, '--untar', $chroot_tar, $chroot);
     if (!create_build_chroot($chroot, $chroot_tar, $run, $config)) {
 	plog('ERROR', "Failed to create chroot");
