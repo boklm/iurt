@@ -5,7 +5,7 @@ use RPM4::Header;
 use File::Basename;
 use File::NCopy qw(copy);
 use MDV::Distribconf::Build;
-use Iurt::Chroot qw(add_local_user create_temp_chroot check_build_chroot);
+use Iurt::Chroot qw(add_local_user create_temp_chroot);
 use Iurt::Process qw(perform_command clean_process sudo);
 use Iurt::Config qw(dump_cache_par get_maint get_package_prefix);
 use Iurt::Util qw(plog);
@@ -642,7 +642,6 @@ sub recreate_srpm {
 	    $run, $config, $cache, %opt)) {
 	plog("ERROR: chrooting failed (retry $opt{retry}") if $run->{debug};
 	if ($opt{retry}) {
-	    check_build_chroot($run->{chroot_path}, $run->{chroot_tar}, $run,  $config) or return;
 	    return -1;
 	}
 	return;

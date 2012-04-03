@@ -39,7 +39,7 @@ use URPM;
 use Iurt::DKMS;
 
 use Iurt::Urpmi;
-use Iurt::Chroot qw(add_local_user create_temp_chroot remove_chroot clean_all_chroot_tmp check_build_chroot clean_chroot);
+use Iurt::Chroot qw(add_local_user create_temp_chroot remove_chroot clean_all_chroot_tmp create_build_chroot clean_chroot);
 use Iurt::Process qw(perform_command kill_for_good sudo);
 use Iurt::Mail qw(sendmail);
 use Iurt::Util qw(plog_init plog);
@@ -716,7 +716,7 @@ $run{chroot_tar} = $chroot_tar;
 # even in use_old_chroot mode we create the chroot if it does not exist (useful 
 # if the option is used for the first time
 if ($run{chroot} || !-d "$chroot/dev") {
-    check_build_chroot($chroot, $chroot_tar, \%run, $config) or die "FATAL $program_name: could not prepare initial chroot";
+    create_build_chroot($chroot, $chroot_tar, \%run, $config) or die "FATAL $program_name: could not prepare initial chroot";
 }
 
 # now exit if there is nothing to do and it was just a cleaning pass
@@ -864,9 +864,14 @@ retry:
 	($ret, $srpm, $spec) = $urpmi->recreate_srpm(\%run, $config,
 			$chroot_tmp, $dir, $srpm, $luser, $retry);
 	if ($ret == -1) {
-	    $retry = 1;
-	    goto retry;
-	} elsif (!$ret) {
+	    if (create_build_chroot($run->{chroot_path}, $run->{chroot_tar}, $run,  $config)) {
+		$retry = 1;
+		goto retry;
+	    } else {
+		$ret = 0;
+	    }
+	} 
+	if (!$ret) {
 	    # CM: experimental: fail if we can't regenerate the srpm
 	    #     This should eliminate bouncers that block the input queue 
 	    #

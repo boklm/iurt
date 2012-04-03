@@ -20,7 +20,6 @@ our @EXPORT = qw(
     remove_chroot
     create_chroot
     create_build_chroot
-    check_build_chroot
 );
     
 my $sudo = '/usr/bin/sudo';
@@ -407,20 +406,6 @@ sub build_chroot {
     }
 
     1;
-}
-
-sub check_build_chroot {
-    my ($chroot, $chroot_tar, $run, $config) = @_;
-
-    plog('DEBUG', "checking basesystem tar");
-    
-    my (@stat) = stat $chroot_tar;
-
-    if (time -$stat[9] > 604800) {
-	plog('WARN', "chroot tarball too old, force rebuild");
-	sudo($config, '--rm', '-r', $chroot, $chroot_tar);
-    }
-    create_build_chroot($chroot, $chroot_tar, $run, $config);
 }
 
 1;
