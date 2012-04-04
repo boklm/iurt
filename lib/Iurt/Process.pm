@@ -362,20 +362,26 @@ sub clean {
 
 sub kill_for_good {
     my ($pid) = @_;
+
+    # try SIGALARM first:
     kill 14, $pid;
     sleep 1;
     waitpid(-1, POSIX::WNOHANG);
-    if (getpgrp $pid != -1) {
-	kill 15, $pid;
-	sleep 1;
-	waitpid(-1, POSIX::WNOHANG);
-	if (getpgrp $pid  != -1) {
-	    print STDERR "WARNING: have to kill -9 pid $pid\n";
-	    kill 9, $pid;
-	    sleep 1;
-	    waitpid(-1, POSIX::WNOHANG);
-	}
-    }
+    
+    return if getpgrp $pid == -1;
+
+    # try to kill it gently then:
+    kill 15, $pid;
+    sleep 1;
+    waitpid(-1, POSIX::WNOHANG);
+
+    return if getpgrp $pid  == -1;
+
+    # try harder to kill it if it hasn't cooperate:
+    print STDERR "WARNING: have to kill -9 pid $pid\n";
+    kill 9, $pid;
+    sleep 1;
+    waitpid(-1, POSIX::WNOHANG);
 }
 
 sub sudo {
