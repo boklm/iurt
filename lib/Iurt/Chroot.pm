@@ -260,7 +260,7 @@ sub create_build_chroot {
 }
 
 sub check_chroot_need_update {
-    my ($tmp_chroot, $run, $config) = @_;
+    my ($tmp_chroot, $run) = @_;
 
     my @installed_pkgs = grep { !/^gpg-pubkey/ } chomp_(cat_("$tmp_chroot/var/log/qa"));
     my @available_pkgs = chomp_(`urpmq --use-distrib $run->{urpmi}{distrib_url} --list -f 2>/dev/null`);
@@ -300,7 +300,7 @@ sub create_chroot {
     } else {
         plog('DEBUG', "decompressing /var/log/qa from $chroot_tar in $tmp_chroot");
         sudo($config, '--untar', $chroot_tar, $tmp_chroot, "./var/log/qa");
-        $rebuild = check_chroot_need_update($tmp_chroot, $run, $config);
+        $rebuild = check_chroot_need_update($tmp_chroot, $run);
     }
 
     if ($rebuild) {
