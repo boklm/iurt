@@ -92,7 +92,7 @@ sub clean_chroot {
 
     if ($run->{additional_media} && $run->{additional_media}{repository}) {
 	my $rep = $run->{additional_media}{repository};
-	if ($rep !~ m/^(http|ftp):)/) {
+	if ($rep !~ m/^(ftp|http):)/) {
 	    my $mount_point = "$chroot/urpmi_medias";
 	    my $url = $rep;
 	    $url =~ s!^file://!!;

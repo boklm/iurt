@@ -30,7 +30,7 @@ sub new {
 
 	plog('DEBUG', "installation media: $run->{chrooted_media}");
     }
-    $self->{use__urpmi_root} = $config->{repository} =~ m/^(http|ftp):/;
+    $self->{use__urpmi_root} = $config->{repository} =~ m/^(ftp|http):/;
     $self->{distrib_url} = "$config->{repository}/$run->{distro}/$run->{my_arch}";
 
     $self;
@@ -120,7 +120,7 @@ sub urpmi_command {
 	    $name =~ s![/:]!_!g;
 
 	    my $url;
-	    if ($run->{additional_media}{repository} =~ m!^(http|ftp):!) {
+	    if ($run->{additional_media}{repository} =~ m!^(ftp|http):!) {
 		$url = $run->{additional_media}{repository};
 	    }
 	    else {
