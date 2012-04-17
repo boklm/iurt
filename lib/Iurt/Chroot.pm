@@ -87,20 +87,27 @@ sub clean_chroot {
     }
 
     if ($run->{additional_media} && $run->{additional_media}{repository}) {
-	my $rep = $run->{additional_media}{repository};
-	if (urpm::is_local_url($rep)) {
-	    my $mount_point = "$chroot/urpmi_medias";
-	    my $url = urpm::file_from_local_url($rep);
-	    sudo($config, '--mkdir', '-p', $mount_point);
-	    if (!sudo($config, '--bindmount', $url, $mount_point)) {
-		plog('ERROR', "Failed to mount $url on $mount_point");
-                _clean_mounts($run, $config, $chroot);
-		return;
-	    }
-	}
+        _setup_additional_media($run, $config, $chroot) or return;
     }
     1;
-}  
+}
+
+sub _setup_additional_media {
+    my ($run, $config, $chroot) = @_;
+    my $rep = $run->{additional_media}{repository};
+
+    return 1 if !urpm::is_local_url($rep);
+
+    my $mount_point = "$chroot/urpmi_medias";
+    my $url = urpm::file_from_local_url($rep);
+    sudo($config, '--mkdir', '-p', $mount_point);
+    if (!sudo($config, '--bindmount', $url, $mount_point)) {
+        plog('ERROR', "Failed to mount $url on $mount_point");
+        _clean_mounts($run, $config, $chroot);
+        return;
+    }
+    1;
+}
 
 sub _clean_mounts {
     my ($run, $config, $chroot) = @_;
