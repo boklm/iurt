@@ -120,7 +120,7 @@ sub urpmi_command {
 	    $name =~ s![/:]!_!g;
 
 	    my $url;
-	    if ($run->{additional_media}{repository} =~ m!^(http:|ftp:)!) {
+	    if ($run->{additional_media}{repository} =~ m!^(http|ftp):!) {
 		$url = $run->{additional_media}{repository};
 	    }
 	    else {
