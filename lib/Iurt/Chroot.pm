@@ -40,11 +40,7 @@ sub clean_chroot {
 
     plog('DEBUG', "clean chroot");
     if (-d $chroot) {
-        sudo($config, "--umount", "$chroot/proc");
-        sudo($config, "--umount", "$chroot/dev/pts");
-	if ($run->{icecream}) {
-            sudo($config, "--umount", "$chroot/var/cache/icecream");
-	}
+        _clean_mounts($run, $config, $chroot);
 	if (-d "$chroot/urpmi_medias/") {
             sudo($config, "--umount", "$chroot/urpmi_medias");
 	}
@@ -85,8 +81,7 @@ sub clean_chroot {
 	system("$sudo mkdir -p $chroot/var/cache/icecream");
 	if (!sudo($config, '--bindmount', "/var/cache/icecream", "$chroot/var/cache/icecream")) {
 	    plog('ERROR', "Failed to mount var/cache/icecream");
-	    sudo($config, "--umount", "$chroot/proc");
-	    sudo($config, "--umount", "$chroot/dev/pts");
+            _clean_mounts($run, $config, $chroot);
 	    return;
 	}
     }
@@ -99,17 +94,23 @@ sub clean_chroot {
 	    sudo($config, '--mkdir', '-p', $mount_point);
 	    if (!sudo($config, '--bindmount', $url, $mount_point)) {
 		plog('ERROR', "Failed to mount $url on $mount_point");
-		sudo($config, "--umount", "$chroot/proc");
-		sudo($config, "--umount", "$chroot/dev/pts");
-		if ($run->{icecream}) {
-		    sudo($config, "--umount", "$chroot/var/cache/icecream");
-		}
+                _clean_mounts($run, $config, $chroot);
 		return;
 	    }
 	}
     }
     1;
 }  
+
+sub _clean_mounts {
+    my ($run, $config, $chroot) = @_;
+    sudo($config, "--umount", "$chroot/proc");
+    sudo($config, "--umount", "$chroot/dev/pts");
+
+    if ($run->{icecream}) {
+        sudo($config, "--umount", "$chroot/var/cache/icecream");
+    }
+}
 
 sub dump_rpmmacros {
     my ($run, $config, $file) = @_;
