@@ -5,10 +5,14 @@ Carp
 constant
 Compress::Zlib
 Cwd
+Digest::base
 Encode
+encoding
 Exporter::Heavy
 File::Basename
 File::Copy
+File::Find
+File::Glob
 File::GlobMapper
 File::NCopy
 File::Path
@@ -25,4 +29,5 @@ MIME::Words
 Scalar::Util
 String::Escape
 Text::Wrap
+Term::ReadKey
 XSLoader
