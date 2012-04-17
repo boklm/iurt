@@ -9,7 +9,7 @@ use Iurt::Chroot qw(add_local_user create_temp_chroot);
 use Iurt::Process qw(perform_command clean_process sudo);
 use Iurt::Config qw(dump_cache_par get_maint get_package_prefix);
 use Iurt::Util qw(plog);
-
+use urpm;
 
 sub new {
     my ($class, %opt) = @_;
@@ -30,7 +30,7 @@ sub new {
 
 	plog('DEBUG', "installation media: $run->{chrooted_media}");
     }
-    $self->{use__urpmi_root} = $config->{repository} =~ m/^(ftp|https?|rsync):/;
+    $self->{use__urpmi_root} = urpm::is_local_url($config->{repository});
     $self->{distrib_url} = "$config->{repository}/$run->{distro}/$run->{my_arch}";
 
     $self;
@@ -120,7 +120,7 @@ sub urpmi_command {
 	    $name =~ s![/:]!_!g;
 
 	    my $url;
-	    if ($run->{additional_media}{repository} =~ m!^(ftp|https?|rsync):!) {
+	    if (urpm::is_local_url($run->{additional_media}{repository})) {
 		$url = $run->{additional_media}{repository};
 	    }
 	    else {

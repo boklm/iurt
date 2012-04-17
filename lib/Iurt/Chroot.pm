@@ -9,6 +9,7 @@ use Iurt::Config qw(dump_cache_par);
 use Iurt::Util qw(plog);
 use File::Temp 'mktemp';
 use File::Path 'mkpath';
+use urpm;
 
 our @EXPORT = qw(
     clean_chroot_tmp
@@ -92,7 +93,7 @@ sub clean_chroot {
 
     if ($run->{additional_media} && $run->{additional_media}{repository}) {
 	my $rep = $run->{additional_media}{repository};
-	if ($rep !~ m/^(ftp|https?|rsync):)/) {
+	if (urpm::is_local_url($rep)) {
 	    my $mount_point = "$chroot/urpmi_medias";
 	    my $url = $rep;
 	    $url =~ s!^file://!!;
