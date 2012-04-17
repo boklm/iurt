@@ -30,7 +30,7 @@ sub new {
 
 	plog('DEBUG', "installation media: $run->{chrooted_media}");
     }
-    $self->{use__urpmi_root} = urpm::is_local_url($config->{repository});
+    $self->{use__urpmi_root} = !urpm::is_local_url($config->{repository});
     $self->{distrib_url} = "$config->{repository}/$run->{distro}/$run->{my_arch}";
 
     $self;
@@ -120,7 +120,7 @@ sub urpmi_command {
 	    $name =~ s![/:]!_!g;
 
 	    my $url;
-	    if (urpm::is_local_url($run->{additional_media}{repository})) {
+	    if (!urpm::is_local_url($run->{additional_media}{repository})) {
 		$url = $run->{additional_media}{repository};
 	    }
 	    else {
