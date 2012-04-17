@@ -95,8 +95,7 @@ sub clean_chroot {
 	my $rep = $run->{additional_media}{repository};
 	if (urpm::is_local_url($rep)) {
 	    my $mount_point = "$chroot/urpmi_medias";
-	    my $url = $rep;
-	    $url =~ s!^file://!!;
+	    my $url = urpm::file_from_local_url($rep);
 	    sudo($config, '--mkdir', '-p', $mount_point);
 	    if (!sudo($config, '--bindmount', $url, $mount_point)) {
 		plog('ERROR', "Failed to mount $url on $mount_point");
