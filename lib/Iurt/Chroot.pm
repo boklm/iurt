@@ -49,7 +49,7 @@ sub clean_chroot {
 	open(my $FP, "/proc/mounts") or die $!;
 	my @list = grep { /$chroot/ } <$FP>;
 	close($FP);
-	if (@list >= 0) {
+	if (@list) {
 	    # Still referenced
 	    return 1;
 	}
