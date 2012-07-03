@@ -154,7 +154,6 @@ sub handle_command_error {
 	dump_cache_par($run);
 	die "FATAL: $opt{error}.";
     }
-    return 0;
 }
 
 sub handle_wait_regexp {
@@ -330,6 +329,7 @@ sub perform_command {
     if (!$call_ret || $kill || $err || $opt{error_regexp} && $fulloutput =~ /$opt{error_regexp}/) {
 	my $msg = "ERROR: call_ret=$call_ret kill=$kill err=$err ($opt{error_regexp})";
 	handle_command_error($run, $config, $cache, $msg, $comment, $fulloutput, %opt);
+        return 0;
     }
     1;
 }
