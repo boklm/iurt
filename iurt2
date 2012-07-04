@@ -864,7 +864,7 @@ retry:
 	($ret, $srpm, $spec) = $urpmi->recreate_srpm(\%run, $config,
 			$chroot_tmp, $dir, $srpm, $luser, $retry);
 	if ($ret == -1) {
-	    if (create_build_chroot($run->{chroot_path}, $run->{chroot_tar}, $run,  $config)) {
+	    if (create_build_chroot($run{chroot_path}, $run{chroot_tar}, \%run,  $config)) {
 		$retry = 1;
 		goto retry;
 	    } else {
