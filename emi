@@ -43,7 +43,7 @@ my $program_name = 'emi';
 $run{program_name} = $program_name;
 
 my $LOG;
-if (!env{'EMI_LOG_FILE'} || !open($LOG, '>>', env{'EMI_LOG_FILE'})) {
+if (!$ENV{'EMI_LOG_FILE'} || !open($LOG, '>>', $ENV{'EMI_LOG_FILE'})) {
     open($LOG, ">&STDERR");
 }
 
