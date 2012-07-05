@@ -49,7 +49,10 @@ my %run;
 my $program_name = 'ulri';
 $run{program_name} = $program_name;
 
-open(my $LOG, ">&STDERR");
+my $LOG;
+if (!$ENV{'ULRI_LOG_FILE'} || !open($LOG, '>>', $ENV{'ULRI_LOG_FILE'})) {
+    open(my $LOG, ">&STDERR");
+}
 
 plog_init($program_name, $LOG, 7, 1);
 

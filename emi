@@ -42,7 +42,11 @@ my %run;
 my $program_name = 'emi';
 $run{program_name} = $program_name;
 
-open(my $LOG, ">&STDERR");
+my $LOG;
+if (!env{'EMI_LOG_FILE'} || !open($LOG, '>>', env{'EMI_LOG_FILE'})) {
+    open($LOG, ">&STDERR");
+}
+
 plog_init($program_name, $LOG, 7, 1);
 
 my $HOME = $ENV{HOME};
