@@ -976,14 +976,12 @@ retry:
 		}, 
 		freq => 1)) {
 
-	    if (!glob "$chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm") {
-		$cache->{failure}{$srpm} = 1;
-		$run{status}{$srpm} = 'build_failure';
-		# 20060615
-		dump_cache_par(\%run);
-		dump_status($local_spool, \%run);
-		next;
-	    }
+	    $cache->{failure}{$srpm} = 1;
+	    $run{status}{$srpm} = 'build_failure';
+	    # 20060615
+	    dump_cache_par(\%run);
+	    dump_status($local_spool, \%run);
+	    next;
 	}
 
 	# do some cleaning if the compilation is successful
