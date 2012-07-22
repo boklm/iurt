@@ -1,0 +1,45 @@
+#!/bin/sh
+
+set -e
+
+distro=$1
+arch=$2
+perlchroot=$3
+if [ -z "$distro" ] || [ -z "$arch" ]; then
+    echo "usage: $0 <distro> <arch> [<iurt chroot>]"
+    exit 1
+fi
+
+media=core/release
+repository=http://repository.mageia.org/distrib/
+
+if [ -z "$perlchroot" ]; then
+    perlchroot=$(echo | iurt --shell -r $distro $arch 2>&1 | perl -lne '/dumping to a chrooted shell into (.*)/ and print $1')
+fi
+
+echo "\
+set -x; \
+set -e; \
+skip() { echo \$*; }; \
+sudo urpmi.update -a; \
+sudo urpmi mgarepo; \
+mkdir -p ~/.mgarepo; \
+perl -pe 's/svn\+ssh:/svn:/' /etc/mgarepo.conf > ~/.mgarepo/config; \
+perlapis_path=\$HOME/perlapis.txt; \
+[ -e \$perlapis_path ] || rpm -q --provides perl-base | grep ^perlapi > \$perlapis_path; \
+for p in perl perl-List-MoreUtils perl-URPM perl-Locale-gettext; do mgarepo getsrpm -l -n \$p; done; \
+rpm -ivh *.src.rpm; \
+sudo urpmi --auto --no-verify-rpm rpm/SPECS/*.spec; \
+rpmbuild -ba rpm/SPECS/perl.spec; \
+sudo rpm -Uvh --nodeps --force \$(ls rpm/RPMS/*/perl-*.rpm | grep -v debug); \
+PERL5LIB=\$(rpm -ql perl-List-MoreUtils | perl -ne 's!/List/MoreUtils.pm!! && print') LIST_MOREUTILS_PP=1 rpmbuild -ba rpm/SPECS/perl-List-MoreUtils.spec; \
+sudo rpm -Uvh --force rpm/RPMS/*/perl-List-MoreUtils-*.rpm; \
+rpmbuild -ba rpm/SPECS/perl-URPM.spec; \
+rpmbuild -ba rpm/SPECS/perl-Locale-gettext.spec; \
+sudo rpm -Uvh --force rpm/RPMS/*/perl-URPM-*.rpm rpm/RPMS/*/perl-Locale-gettext-*.rpm; \
+updatepkgs() { spec=\$1; toupdate=; while read line; do set -- \$line; name=\$1; path=\$2; rpm -q \$name --quiet && toupdate=\"\$toupdate \$path\"; done < <(rpm -q --specfile \$spec --qf '%{name} rpm/RPMS/%{arch}/%{name}-%{version}-%{release}.%{arch}.rpm\n' | egrep -v -- '-(debug|__restore__)-'); [ -n \"\$toupdate\" ] && sudo rpm -Uvh --force \$toupdate; }; \
+rebuild() { p=\$1; mgarepo getsrpm -l -n \$p; rpm -ivh \@*-\$p-*.src.rpm; spec=rpm/SPECS/\$p.spec; sudo urpmi --auto --no-verify-rpm \$spec; rpmbuild -ba \$spec; updatepkgs \$spec; }; \
+rebuild perl-HTML-Parser; \
+pkgs=\$(LC_ALL=C rpm -q --qf '%{SOURCERPM}\n' --whatrequires \$(cat \$perlapis_path) | perl -lne '/^(\S+)-[^-]+-[^-]+\$/ and print \$1' | uniq); for p in \$pkgs; do rebuild \$p; done; \
+" | iurt --shell -r $distro $arch --use-old-chroot $perlchroot --chrooted-urpmi -m $media -- $repository
+echo $perlchroot
