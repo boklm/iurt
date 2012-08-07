@@ -19,7 +19,6 @@ our @EXPORT = qw(
     add_local_user
     create_temp_chroot
     remove_chroot
-    create_chroot
     create_build_chroot
 );
     
@@ -261,12 +260,6 @@ sub check_mounted {
     0;
 }
 
-sub create_build_chroot {
-    my ($chroot, $chroot_tar, $run, $config) = @_;
-    create_chroot($chroot, $chroot_tar, $run, $config,
-			{ packages => $config->{basesystem_packages} });
-}
-
 sub check_chroot_need_update {
     my ($tmp_chroot, $run) = @_;
 
@@ -289,8 +282,10 @@ sub check_chroot_need_update {
         return 1;
     }
 }
-sub create_chroot {
-    my ($chroot, $chroot_tar, $run, $config, $opt) = @_;
+
+sub create_build_chroot {
+    my ($chroot, $chroot_tar, $run, $config) = @_;
+
     my $tmp_chroot = mktemp("$chroot.tmp.XXXXXX");
     my $rebuild;
     my $clean = sub {
@@ -299,7 +294,6 @@ sub create_chroot {
     };
 
     plog('NOTIFY', "creating chroot");
-    plog('DEBUG', "... with packages " . join(', ', @{$opt->{packages}}));
 
     mkdir_p($tmp_chroot);
     if (!-f $chroot_tar) {
@@ -313,7 +307,7 @@ sub create_chroot {
 
     if ($rebuild) {
 	sudo($config, '--rm', '-r', $chroot);
-	if (!build_chroot($run, $config, $tmp_chroot, $opt)) {
+	if (!build_chroot($run, $config, $tmp_chroot)) {
 	    plog('NOTIFY', "creating chroot failed.");
 	    $clean->();
 	    return;
@@ -335,10 +329,10 @@ sub create_chroot {
 }
 
 sub build_chroot {
-    my ($run, $config, $tmp_chroot, $opt) = @_;
+    my ($run, $config, $tmp_chroot) = @_;
 
     plog('DEBUG', "building the chroot with "
-			. join(', ', @{$opt->{packages}}));
+			. join(', ', @{$config->{basesystem_packages}}));
 
     sudo($config, "--mkdir", "-p", "$tmp_chroot/dev/pts",
 		"$tmp_chroot/etc/sysconfig", "$tmp_chroot/proc",
@@ -362,7 +356,7 @@ sub build_chroot {
     $urpmi->set_command($tmp_chroot);
 
     # (blino) install meta-task first for prefer.vendor.list to be used
-    foreach my $packages ([ 'meta-task' ], $opt->{packages}) {
+    foreach my $packages ([ 'meta-task' ], $config->{basesystem_packages}) {
         if (!$urpmi->install_packages(
             "chroot",
             $tmp_chroot,
