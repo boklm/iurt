@@ -313,6 +313,7 @@ sub create_build_chroot {
 	    return;
 	} 
 	sudo($config, "--tar", $chroot_tar, $tmp_chroot);
+	rename $tmp_chroot, $chroot;
     }
 
     if (!-d $chroot) {
