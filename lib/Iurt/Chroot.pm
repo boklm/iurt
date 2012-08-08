@@ -341,17 +341,18 @@ sub create_build_chroot_btrfs {
 
     if (check_chroot_need_update($chroot_ref, $run)) {
 	sudo($config, '--btrfs_delete', $chroot_ref);
-	sudo($config, '--btrfs_create', $chroot_ref); # Check !
+	if (!sudo($config, '--btrfs_create', $chroot_ref)) {
+	    plog('ERROR', "creating btrfs subvolume failed.");
+	    return;
+	}
 	if (!build_chroot($run, $config, $chroot_ref)) {
-	    plog('NOTIFY', "creating chroot failed.");
+	    plog('ERROR', "creating chroot failed.");
 	    sudo($config, '--btrfs_delete', $chroot_ref);
 	    return;
 	} 
     }
 
-    sudo($config, '--btrfs_snapshot', $chroot_ref, $chroot); # Check !
-
-    1;
+    sudo($config, '--btrfs_snapshot', $chroot_ref, $chroot);
 }
 
 sub build_chroot {
