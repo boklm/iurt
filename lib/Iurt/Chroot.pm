@@ -316,6 +316,8 @@ sub create_build_chroot_tar {
 	    return;
 	} 
 	sudo($config, "--tar", $chroot_tar, $tmp_chroot);
+	# This rename may fail if for example tmp chroots are in another FS
+	# This does not matter as it will then be rm + untar
 	rename $tmp_chroot, $chroot;
     }
 
