@@ -39,7 +39,7 @@ use URPM;
 use Iurt::DKMS;
 
 use Iurt::Urpmi;
-use Iurt::Chroot qw(add_local_user create_temp_chroot remove_chroot clean_all_chroot_tmp create_build_chroot clean_chroot);
+use Iurt::Chroot qw(add_local_user create_temp_chroot remove_chroot create_build_chroot clean_chroot);
 use Iurt::Process qw(perform_command kill_for_good sudo);
 use Iurt::Mail qw(sendmail);
 use Iurt::Util qw(plog_init plog);
@@ -351,6 +351,12 @@ $run{todo} = [];
     sub {
 	    $run{icecream} = $_[0];
     }, "Enabling icecream usage" ],
+    ###############################
+    [ "", "storage", 1, "[btrfs|tar]", 
+    "Select how to store reference chroot",
+    sub {
+	    $run{storage} = $_[0];
+    }, "Setting storage" ],
 );
 
 open(my $LOG, ">&STDERR");
@@ -363,7 +369,6 @@ plog_init($program_name, $run{logfd} || $LOG, 7, 1); # For parsing command line
 (my $iurt_aut = '$Author$') =~ s/.*: (..).*/$1/;
 (my $iurt_dat = '$Date$') =~ s/.*: ([\d-]* [\d:]*) .*/$1/;
 plog("MSG", "This is iurt2 revision $iurt_rev-$iurt_aut ($iurt_dat)");
-
 
 my $todo = parseCommandLine($program_name, \@ARGV, \@params);
 @ARGV and usage($program_name, \@params, "@ARGV, too many arguments");
@@ -435,6 +440,10 @@ my %config_usage = (
 	    'urpmi',
 	    'curl',
 	]
+    },
+    btrfs_base => {
+	desc => 'Where to create btrfs subvolumes',
+	default => $HOME
     },
     build_timeout => {
 	desc => 'Maximum build time after which the build process is terminated',
@@ -687,20 +696,25 @@ my (%done, $done);
 $run{done} = \%done;
 my $home = $config->{local_home};
 
-my ($chroot_name, $chroot_tmp, $chroot, $chroot_tar);
+my $chroot_base;
+if ($run{storage} eq 'btrfs') {
+    $chroot_base = $config->{btrfs_base};
+} else {
+    $chroot_base = $config->{local_home};
+}
+my ($chroot_name, $chroot_tmp, $chroot, $chroot_ref);
 $chroot_name = "chroot_$run{distro_tag}$debug_tag.$run{my_arch}";
 if (!$run{use_old_chroot}) {
-    $chroot_tmp = "$config->{local_home}/chroot_tmp";
+    $chroot_tmp = "$chroot_base/chroot_tmp";
 
     if (!-d $chroot_tmp) {
 	mkdir $chroot_tmp;
     } else {
-	remove_chroot(\%run, $chroot_tmp, \&clean_all_chroot_tmp, $chroot_name);
+	remove_chroot(\%run, $chroot_tmp, $chroot_name);
     }
 
-    $chroot_tmp = "$config->{local_home}/chroot_tmp/$run{user}";
-    mkdir_p($chroot_tmp);
-    $chroot_tmp = "$config->{local_home}/chroot_tmp/$run{user}/$chroot_name.$run{run}";
+    mkdir_p("$chroot_tmp/$run{user}");
+    $chroot_tmp = "$chroot_tmp/$run{user}/$chroot_name.$run{run}";
     $run{chroot_tmp} = $chroot_tmp;
 
     $chroot = "$config->{local_home}/$chroot_name";
@@ -710,13 +724,17 @@ if (!$run{use_old_chroot}) {
     $chroot = $run{use_old_chroot};
 }
 $run{chroot_path} = $chroot;
-$chroot_tar = "$config->{local_home}/$chroot_name.tar.gz";
-$run{chroot_tar} = $chroot_tar;
+if ($run{storage} eq 'btrfs') {
+    $chroot_ref = "$chroot_base/$chroot_name";
+} else {
+    $chroot_ref = "$chroot_base/$chroot_name.tar.gz";
+}
+$run{chroot_ref} = $chroot_ref;
 # 20061222 warly 
 # even in use_old_chroot mode we create the chroot if it does not exist (useful 
 # if the option is used for the first time
 if ($run{chroot} || !-d "$chroot/dev") {
-    create_build_chroot($chroot, $chroot_tar, \%run, $config) or die "FATAL $program_name: could not prepare initial chroot";
+    create_build_chroot($chroot, $chroot_ref, \%run, $config) or die "FATAL $program_name: could not prepare initial chroot";
 }
 
 # now exit if there is nothing to do and it was just a cleaning pass
@@ -737,7 +755,7 @@ if ($df->{per} >= 99) {
 
 if ($run{shell}) {
     if (!$run{use_old_chroot}) {
-	create_temp_chroot(\%run, $config, $chroot_tmp, $chroot_tar)
+	create_temp_chroot(\%run, $config, $chroot_tmp, $chroot_ref)
 	    or die "FATAL $program_name: could not create temporary chroot";
     }
     add_local_user($chroot_tmp, \%run, $config, $luser, $run{uid}) or die "FATAL $program_name: could not add local user";
@@ -836,7 +854,7 @@ retry:
 	
 	if (!$run{use_old_chroot}) {
 	    $chroot_tmp = create_temp_chroot(\%run, $config,
-		$chroot_tmp, $chroot_tar) or next; 
+		$chroot_tmp, $chroot_ref) or next; 
 	}
 
 	if (!$urpmi->urpmi_command($chroot_tmp)) {
@@ -864,7 +882,7 @@ retry:
 	($ret, $srpm, $spec) = $urpmi->recreate_srpm(\%run, $config,
 			$chroot_tmp, $dir, $srpm, $luser, $retry);
 	if ($ret == -1) {
-	    if (create_build_chroot($run{chroot_path}, $run{chroot_tar}, \%run,  $config)) {
+	    if (create_build_chroot($run{chroot_path}, $run{chroot_ref}, \%run,  $config)) {
 		$retry = 1;
 		goto retry;
 	    } else {
@@ -1063,7 +1081,7 @@ retry:
 } while $rebuild;
 
 if (!$run{debug} && !$run{use_old_chroot}) {
-    clean_chroot($chroot_tmp, $chroot_tar, \%run, $config, 1);
+    clean_chroot($chroot_tmp, $chroot_ref, \%run, $config, 1);
 }
 plog("reprocess generated packages queue");
 process_queue($config, \%run, \@wrong_rpm);

@@ -147,6 +147,18 @@ $run{todo} = [];
     "umount the given directory", 
     \&umount, "Unmounting" ],
 
+    [ "", "btrfs_create", 1, "<directory>", 
+    "create a btrfs subvolume", 
+    \&btrfs_create, "Create btrfs" ],
+
+    [ "", "btrfs_delete", 1, "<directory>", 
+    "delete a btrfs subvolume", 
+    \&btrfs_delete, "Delete btrfs" ],
+
+    [ "", "btrfs_snapshot", 2, "<source> <dest>", 
+    "create a btrfs snapshot", 
+    \&btrfs_snapshot, "btrfs snapshot" ],
+
     [ "", "useradd", 3, "<directory> <username> [uid]", 
     "Add user in given chroot", 
     \&useradd, "Useradd" ],
@@ -379,6 +391,24 @@ sub untar {
     }
     make_path($dir);
     return !system('tar', 'xf', $file, '-C', $dir, @o_files);
+}
+
+sub btrfs_create {
+    my ($_run, $dest) = @_;
+    check_path_authorized($dest) or return;
+    return !system("btrfs", "subvolume", "create", $dest);
+}
+
+sub btrfs_delete {
+    my ($_run, $dest) = @_;
+    check_path_authorized($dest) or return;
+    return !system("btrfs", "subvolume", "delete", $dest);
+}
+
+sub btrfs_snapshot {
+    my ($_run, $source, $dest) = @_;
+    check_path_authorized($dest) or return;
+    return !system("btrfs", "subvolume", "snapshot", $source, $dest);
 }
 
 sub bindmount {

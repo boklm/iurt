@@ -12,8 +12,6 @@ use File::Path 'mkpath';
 use urpm;
 
 our @EXPORT = qw(
-    clean_chroot_tmp
-    clean_all_chroot_tmp
     clean_chroot
     dump_rpmmacros
     add_local_user
@@ -35,14 +33,11 @@ Return true.
 =cut
 
 sub clean_chroot {
-    my ($chroot, $chroot_tar, $run, $config, $o_only_clean) = @_;
+    my ($chroot, $chroot_ref, $run, $config, $o_only_clean) = @_;
 
     plog('DEBUG', "clean chroot");
     if (-d $chroot) {
         _clean_mounts($run, $config, $chroot);
-	if (-d "$chroot/urpmi_medias/") {
-            sudo($config, "--umount", "$chroot/urpmi_medias");
-	}
 
 	# Do not run rm if there is something still mounted there
 	open(my $FP, "/proc/mounts") or die $!;
@@ -53,12 +48,12 @@ sub clean_chroot {
 	    return 1;
 	}
 
-	sudo($config, '--rm', '-r', $chroot);
+	delete_chroot($run, $config, $chroot);
     }
 
     return 1 if $o_only_clean;
 
-    if (!create_build_chroot($chroot, $chroot_tar, $run, $config)) {
+    if (!create_build_chroot($chroot, $chroot_ref, $run, $config)) {
 	plog('ERROR', "Failed to create chroot");
         return;
     }
@@ -115,6 +110,10 @@ sub _clean_mounts {
 
     if ($run->{icecream}) {
         sudo($config, "--umount", "$chroot/var/cache/icecream");
+    }
+
+    if (-d "$chroot/urpmi_medias") {
+        sudo($config, "--umount", "$chroot/urpmi_medias");
     }
 }
 
@@ -176,11 +175,11 @@ sub add_local_user {
 }
 
 sub create_temp_chroot {
-    my ($run, $config, $chroot_tmp, $chroot_tar) = @_;
+    my ($run, $config, $chroot_tmp, $chroot_ref) = @_;
 
     plog("Install new chroot");
     plog('DEBUG', "... in $chroot_tmp");
-    clean_chroot($chroot_tmp, $chroot_tar, $run, $config) or return;
+    clean_chroot($chroot_tmp, $chroot_ref, $run, $config) or return;
 
     $chroot_tmp;
 }
@@ -196,18 +195,18 @@ sub remove_chroot {
 	foreach (readdir $chroot_dir) {
 	    next if !-d "$dir/$_" || /\.{1,2}/;
 	    plog("cleaning old chroot for $_ in $dir");
-	    $func->($run, "$dir/$_", $prefix);
+	    clean_all_chroot_tmp($run, "$dir/$_", $prefix);
 	}
     } else {
 	foreach my $user (@{$run->{clean}}) {
 	    plog("cleaning old chroot for $user in $dir");
-	    $func->($run, "$dir/$user", $prefix);
+	    clean_all_chroot_tmp($run, "$dir/$user", $prefix);
 	}
     }
 } 
 
 sub clean_all_chroot_tmp {
-    my ($run, $chroot_dir, $prefix) = @_;
+    my ($run, $config, $chroot_dir, $prefix) = @_;
 
     plog(1, "cleaning all old chroot remaining dir in $chroot_dir");
 
@@ -218,30 +217,25 @@ sub clean_all_chroot_tmp {
     }
     foreach (readdir($dir)) {
 	/$prefix/ or next;
-	clean_chroot_tmp($run, $chroot_dir, $_);
+	delete_chroot($run, $config, "$chroot_dir/$_");
     }
     closedir $dir;
 }
 
-sub clean_chroot_tmp {
-    my ($run, $chroot_dir, $dir) = @_;
-    my $d = "$chroot_dir/$dir";
+sub delete_chroot {
+    my ($run, $config, $chroot) = @_;
 
-    foreach my $m ('proc', 'dev/pts', 'urpmi_medias', 'var/cache/icecream') {
-	if (system("$sudo umount $d/$m &>/dev/null") && $run->{verbose} > 1) { 
-	    plog("ERROR: could not umount /$m in $d/");
-	    # FIXME: <mrl> We can't go on, otherelse we will remove something
-	    # that we shouldn't. But for that, we should:
-	    #  a) Check for all mount-points inside the chroot
-	    #  b) Try to unmount only the needed ones, otherelse the errors
-	    # can be misleading.
-	}
+    _clean_mounts($run, $config, $chroot);
+
+    plog(1, "cleaning $chroot");
+    # Needs to be added to iurt_root_command
+    # system("$sudo /sbin/fuser -k $chroot &> /dev/null");
+    plog(1, "removing $chroot");
+    if ($run->{storage} eq 'btrfs') {
+	sudo($config, '--btrfs_delete', $chroot);
+    } else {
+        sudo($config, '--rm', '-r', $chroot);
     }
-
-    plog(1, "cleaning $d");
-    system("$sudo /sbin/fuser -k $d &> /dev/null");
-    plog(1, "removing $d");
-    system($sudo, 'rm', '-rf', $d);
 }
 
 sub check_mounted {
@@ -284,6 +278,15 @@ sub check_chroot_need_update {
 }
 
 sub create_build_chroot {
+    my ($chroot, $chroot_ref, $run, $config) = @_;
+    if ($run->{storage} eq 'btrfs') {
+        return create_build_chroot_btrfs($chroot, $chroot_ref, $run, $config);
+    } else {
+        return create_build_chroot_tar($chroot, $chroot_ref, $run, $config);
+    }
+}
+
+sub create_build_chroot_tar {
     my ($chroot, $chroot_tar, $run, $config) = @_;
 
     my $tmp_chroot = mktemp("$chroot.tmp.XXXXXX");
@@ -325,6 +328,26 @@ sub create_build_chroot {
     }
     
     $clean->();
+
+    1;
+}
+
+sub create_build_chroot_btrfs {
+    my ($chroot, $chroot_ref, $run, $config) = @_;
+
+    plog('NOTIFY', "creating btrfs chroot");
+
+    if (check_chroot_need_update($chroot_ref, $run)) {
+	sudo($config, '--btrfs_delete', $chroot_ref);
+	sudo($config, '--btrfs_create', $chroot_ref); # Check !
+	if (!build_chroot($run, $config, $chroot_ref)) {
+	    plog('NOTIFY', "creating chroot failed.");
+	    sudo($config, '--btrfs_delete', $chroot_ref);
+	    return;
+	} 
+    }
+
+    sudo($config, '--btrfs_snapshot', $chroot_ref, $chroot); # Check !
 
     1;
 }
@@ -399,14 +422,7 @@ sub build_chroot {
 
     # FIXME: <mrl> Be careful! Damn ugly hack right below!
     sudo($config, "--rm", "$tmp_chroot/var/lib/rpm/__db*");
-    sudo($config, "--umount", "$tmp_chroot/proc");
-    sudo($config, "--umount", "$tmp_chroot/dev/pts");
-    if ($run->{icecream}) {
-	sudo($config, "--umount", "$tmp_chroot/var/cache/icecream");
-    }
-    if (-d "$tmp_chroot/urpmi_medias/") {
-	sudo($config, "--umount", "$tmp_chroot/urpmi_medias");
-    }
+    _clean_mounts($run, $config, $tmp_chroot);
 
     1;
 }
