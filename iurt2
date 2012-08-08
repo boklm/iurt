@@ -441,10 +441,6 @@ my %config_usage = (
 	    'curl',
 	]
     },
-    btrfs_base => {
-	desc => 'Where to create btrfs subvolumes',
-	default => $HOME
-    },
     build_timeout => {
 	desc => 'Maximum build time after which the build process is terminated',
 	default => {
@@ -462,6 +458,10 @@ my %config_usage = (
     check_binary_file => {
 	desc => 'Packages rebuild should be checked, however sometime rpm is segfaulting and the test is not correct',
 	default => 0
+    },
+    chroot_base => {
+	desc => 'Where to store chroots',
+	default => $HOME
     },
     iurt_root_command => {
 	desc => 'Program to run sudo command',
@@ -696,12 +696,7 @@ my (%done, $done);
 $run{done} = \%done;
 my $home = $config->{local_home};
 
-my $chroot_base;
-if ($run{storage} eq 'btrfs') {
-    $chroot_base = $config->{btrfs_base};
-} else {
-    $chroot_base = $config->{local_home};
-}
+my $chroot_base = $config->{chroot_base};
 my ($chroot_name, $chroot_tmp, $chroot, $chroot_ref);
 $chroot_name = "chroot_$run{distro_tag}$debug_tag.$run{my_arch}";
 if (!$run{use_old_chroot}) {
