@@ -6,6 +6,7 @@
 - kill unused/untested features
 - make it load the needed File::lockf module
 - simplified code
+- support using btrfs snapshots instead of tarballs for chroot
 
 0.6.6-1.r3553
 - accept synthesis files with less than 1000 packages
