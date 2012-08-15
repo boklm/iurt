@@ -25,7 +25,7 @@ tar: dist
 
 dist:
 	rm -rf ../$(NAME)-$(VERSION).tar*
-	@if [ -e ".svn" ]; then \
+	@if svn info > /dev/null; then \
 		$(MAKE) dist-svn; \
 	elif [ -e ".git" ]; then \
 		$(MAKE) dist-git; \
