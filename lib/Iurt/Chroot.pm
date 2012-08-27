@@ -7,6 +7,7 @@ use MDK::Common;
 use Iurt::Process qw(sudo);
 use Iurt::Config qw(dump_cache_par);
 use Iurt::Util qw(plog);
+use Iurt::Urpmi;
 use File::Temp 'mktemp';
 use File::Path 'mkpath';
 use urpm;
@@ -395,7 +396,7 @@ sub build_chroot {
     sudo($config, '--cp', "/etc/resolv.conf", "$tmp_chroot/etc/");
 
     # install chroot
-    my $urpmi = $run->{urpmi};
+    my $urpmi = $run->{urpmi}; # perl_checker: $urpmi = Iurt::Urpmi->new
 
     if ($urpmi->{use__urpmi_root}) {
 	if (!$urpmi->add_media__urpmi_root($tmp_chroot, $config->{base_media})) {
