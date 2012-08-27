@@ -3,7 +3,7 @@ package Iurt::DKMS;
 use strict;
 use base qw(Exporter);
 use MDV::Distribconf::Build;
-use Iurt::Chroot qw(clean_chroot add_local_user dump_rpmmacros);
+use Iurt::Chroot qw(clean_and_build_chroot add_local_user dump_rpmmacros);
 use Iurt::Config qw(get_maint get_prefix dump_cache);
 use Iurt::Mail qw(sendmail);
 use File::NCopy qw(copy);
@@ -180,7 +180,7 @@ sub dkms_compile {
     my $to_compile = $run->{to_compile};
 
     plog("building chroot: $chroot_tmp");
-    clean_chroot($chroot_tmp, $chroot_tar, $run, $config);
+    clean_and_build_chroot($chroot_tmp, $chroot_tar, $run, $config);
     my %installed;
     # initialize urpmi command
     $urpmi->urpmi_command($chroot_tmp);

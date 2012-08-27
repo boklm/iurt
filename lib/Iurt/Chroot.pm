@@ -13,6 +13,7 @@ use urpm;
 
 our @EXPORT = qw(
     add_local_user
+    clean_and_build_chroot
     clean_chroot
     create_build_chroot
     create_temp_chroot
@@ -22,18 +23,17 @@ our @EXPORT = qw(
     
 my $sudo = '/usr/bin/sudo';
 
-=head2 clean_chroot($chroot, $run, $only_clean)
+=head2 clean_chroot($chroot, $run)
 
 Create or clean a chroot
 I<$chroot> chroot path
 I<$run> is the running environment
-I<%only_clean> only clean the chroot, do not create a new one
 Return true.
 
 =cut
 
 sub clean_chroot {
-    my ($chroot, $chroot_ref, $run, $config, $o_only_clean) = @_;
+    my ($chroot, $chroot_ref, $run, $config) = @_;
 
     plog('DEBUG', "clean chroot");
     if (-d $chroot) {
@@ -51,8 +51,23 @@ sub clean_chroot {
 
 	delete_chroot($run, $config, $chroot);
     }
+    0;
+}
 
-    return 1 if $o_only_clean;
+
+=head2 clean_and_build_chroot($chroot, $run)
+
+Create or clean a chroot
+I<$chroot> chroot path
+I<$run> is the running environment
+Return true.
+
+=cut
+
+
+sub clean_and_build_chroot {
+    my ($chroot, $chroot_ref, $run, $config) = @_;
+    clean_chroot($chroot, $chroot_ref, $run, $config) and return 1;
 
     if (!create_build_chroot($chroot, $chroot_ref, $run, $config)) {
 	plog('ERROR', "Failed to create chroot");
@@ -187,7 +202,7 @@ sub create_temp_chroot {
 
     plog("Install new chroot");
     plog('DEBUG', "... in $chroot_tmp");
-    clean_chroot($chroot_tmp, $chroot_ref, $run, $config) or return;
+    clean_and_build_chroot($chroot_tmp, $chroot_ref, $run, $config) or return;
 
     $chroot_tmp;
 }
