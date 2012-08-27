@@ -12,12 +12,12 @@ use File::Path 'mkpath';
 use urpm;
 
 our @EXPORT = qw(
-    clean_chroot
-    dump_rpmmacros
     add_local_user
-    create_temp_chroot
-    remove_chroot
+    clean_chroot
     create_build_chroot
+    create_temp_chroot
+    dump_rpmmacros
+    remove_chroot
 );
     
 my $sudo = '/usr/bin/sudo';
