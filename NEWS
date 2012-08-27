@@ -1,4 +1,5 @@
 0.6.7 (unreleased)
+- internal cleanups
 - log not cleaning chroots due mount points still being there
 - mount /dev/shm in chroots too (needed for eg: python)
 

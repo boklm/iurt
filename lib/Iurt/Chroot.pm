@@ -208,7 +208,7 @@ sub create_temp_chroot {
 }
 
 sub remove_chroot {
-    my ($run, $dir, $func, $prefix) = @_;
+    my ($run, $dir, $prefix) = @_;
 
     plog("Remove existing chroot");
     plog('DEBUG', "... dir $dir all $run->{clean_all} prefix $prefix");
