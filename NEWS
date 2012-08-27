@@ -1,3 +1,5 @@
+0.6.7 (unreleased)
+
 0.6.6-1.r5364
 - allow emi and ulri to log to a file instead of stderr by setting
   EMI_LOG_FILE or ULRI_LOG_FILE environement variables
