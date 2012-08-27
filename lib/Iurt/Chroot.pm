@@ -228,6 +228,7 @@ sub remove_chroot {
     }
 } 
 
+# BUG: FIXME: $config is never passed!
 sub clean_all_chroot_tmp {
     my ($run, $config, $chroot_dir, $prefix) = @_;
 
