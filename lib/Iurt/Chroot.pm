@@ -23,7 +23,7 @@ our @EXPORT = qw(
     
 my $sudo = '/usr/bin/sudo';
 
-=head2 clean_chroot($chroot, $run)
+=head2 clean_chroot($chroot, $run, $config)
 
 Create or clean a chroot
 I<$chroot> chroot path
@@ -55,7 +55,7 @@ sub clean_chroot {
 }
 
 
-=head2 clean_and_build_chroot($chroot, $run)
+=head2 clean_and_build_chroot($chroot, $chroot_ref, $run, $config)
 
 Create or clean a chroot
 I<$chroot> chroot path
