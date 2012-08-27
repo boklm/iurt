@@ -705,7 +705,7 @@ if (!$run{use_old_chroot}) {
     if (!-d $chroot_tmp) {
 	mkdir $chroot_tmp;
     } else {
-	remove_chroot(\%run, $chroot_tmp, $chroot_name);
+	remove_chroot(\%run, $config, $chroot_tmp, $chroot_name);
     }
 
     mkdir_p("$chroot_tmp/$run{user}");

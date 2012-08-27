@@ -208,7 +208,7 @@ sub create_temp_chroot {
 }
 
 sub remove_chroot {
-    my ($run, $dir, $prefix) = @_;
+    my ($run, $config, $dir, $prefix) = @_;
 
     plog("Remove existing chroot");
     plog('DEBUG', "... dir $dir all $run->{clean_all} prefix $prefix");
@@ -218,12 +218,12 @@ sub remove_chroot {
 	foreach (readdir $chroot_dir) {
 	    next if !-d "$dir/$_" || /\.{1,2}/;
 	    plog("cleaning old chroot for $_ in $dir");
-	    clean_all_chroot_tmp($run, "$dir/$_", $prefix);
+	    clean_all_chroot_tmp($run, $config, "$dir/$_", $prefix);
 	}
     } else {
 	foreach my $user (@{$run->{clean}}) {
 	    plog("cleaning old chroot for $user in $dir");
-	    clean_all_chroot_tmp($run, "$dir/$user", $prefix);
+	    clean_all_chroot_tmp($run, $config, "$dir/$user", $prefix);
 	}
     }
 } 
