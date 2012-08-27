@@ -1076,7 +1076,7 @@ retry:
 } while $rebuild;
 
 if (!$run{debug} && !$run{use_old_chroot}) {
-    clean_chroot($chroot_tmp, $chroot_ref, \%run, $config);
+    clean_chroot($chroot_tmp, \%run, $config);
 }
 plog("reprocess generated packages queue");
 process_queue($config, \%run, \@wrong_rpm);

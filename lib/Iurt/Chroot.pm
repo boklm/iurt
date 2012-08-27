@@ -33,7 +33,7 @@ Return true.
 =cut
 
 sub clean_chroot {
-    my ($chroot, $chroot_ref, $run, $config) = @_;
+    my ($chroot, $run, $config) = @_;
 
     plog('DEBUG', "clean chroot");
     if (-d $chroot) {
@@ -67,7 +67,7 @@ Return true.
 
 sub clean_and_build_chroot {
     my ($chroot, $chroot_ref, $run, $config) = @_;
-    clean_chroot($chroot, $chroot_ref, $run, $config) and return 1;
+    clean_chroot($chroot, $run, $config) and return 1;
 
     if (!create_build_chroot($chroot, $chroot_ref, $run, $config)) {
 	plog('ERROR', "Failed to create chroot");
