@@ -45,6 +45,7 @@ sub clean_chroot {
 	close($FP);
 	if (@list) {
 	    # Still referenced
+	    plog('ERROR', "Not cleaning chroot (mount points still in use)");
 	    return 1;
 	}
 

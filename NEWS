@@ -1,4 +1,5 @@
 0.6.7 (unreleased)
+- log not cleaning chroots due mount points still being there
 - mount /dev/shm in chroots too (needed for eg: python)
 
 0.6.6-1.r5364
