@@ -18,7 +18,7 @@ install:
 	install -d $(bindir) $(sbindir) $(INSTALLVENDORLIB)/Iurt
 	install -m 644 lib/Iurt/*.pm $(INSTALLVENDORLIB)/Iurt
 	install -m755 iurt_root_command $(sbindir)/
-	install -m755 iurt2 $(bindir)/iurt
+	install -m755 iurt $(bindir)/iurt
 	install -m755 emi ulri $(bindir)/
 
 tar: dist
