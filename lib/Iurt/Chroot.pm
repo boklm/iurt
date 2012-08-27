@@ -71,6 +71,12 @@ sub clean_chroot {
 	sudo($config, "--umount", "$chroot/proc");
 	return;
     }
+    if (system("$sudo mount none -t tmpfs $chroot/dev/shm")) {
+	plog('ERROR', "Failed to mount dev/shm");
+	sudo($config, "--umount", "$chroot/proc");
+	sudo($config, "--umount", "$chroot/dev/pts");
+	return;
+    }
     if ($run->{icecream}) {
 	system("$sudo mkdir -p $chroot/var/cache/icecream");
 	if (!sudo($config, '--bindmount', "/var/cache/icecream", "$chroot/var/cache/icecream")) {
@@ -107,6 +113,7 @@ sub _clean_mounts {
     my ($run, $config, $chroot) = @_;
     sudo($config, "--umount", "$chroot/proc");
     sudo($config, "--umount", "$chroot/dev/pts");
+    sudo($config, "--umount", "$chroot/dev/shm");
 
     if ($run->{icecream}) {
         sudo($config, "--umount", "$chroot/var/cache/icecream");
@@ -361,7 +368,7 @@ sub build_chroot {
     plog('DEBUG', "building the chroot with "
 			. join(', ', @{$config->{basesystem_packages}}));
 
-    sudo($config, "--mkdir", "-p", "$tmp_chroot/dev/pts",
+    sudo($config, "--mkdir", "-p", "$tmp_chroot/dev/pts", "$tmp_chroot/dev/shm",
 		"$tmp_chroot/etc/sysconfig", "$tmp_chroot/proc",
 	        "$tmp_chroot/var/lib/rpm");
 

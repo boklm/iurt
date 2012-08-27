@@ -1,4 +1,5 @@
 0.6.7 (unreleased)
+- mount /dev/shm in chroots too (needed for eg: python)
 
 0.6.6-1.r5364
 - allow emi and ulri to log to a file instead of stderr by setting
