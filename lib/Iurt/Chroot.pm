@@ -7,7 +7,7 @@ use MDK::Common;
 use Iurt::Process qw(sudo);
 use Iurt::Config qw(dump_cache_par);
 use Iurt::Util qw(plog);
-use Iurt::Urpmi;
+# perl_checker: use Iurt::Urpmi
 use File::Temp 'mktemp';
 use File::Path 'mkpath';
 use urpm;

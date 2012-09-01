@@ -1,4 +1,5 @@
 0.6.8 (unreleased)
+- fix import loop
 
 0.6.7
 - fix removing chroots
