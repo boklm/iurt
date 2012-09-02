@@ -296,7 +296,7 @@ sub dkms_compile {
     dump_cache($run);
     $done;
 }  
-# FIXME will replace the iurt2 process_qeue when youri-queue is active
+# FIXME will replace the iurt process_qeue when youri-queue is active
 sub process_dkms_queue {
     my ($self, $wrong_rpm, $quiet, $media, $dir) = @_;
     my $run = $self->{run};

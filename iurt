@@ -77,7 +77,7 @@ $SIG{TERM} = sub {
     exit(1);
 };
 
-my $program_name = 'iurt2';
+my $program_name = 'iurt';
 
 # sessing parameters
 my $sudo = '/usr/bin/sudo';
@@ -368,7 +368,7 @@ plog_init($program_name, $run{logfd} || $LOG, 7, 1); # For parsing command line
 (my $iurt_rev = '$Rev$') =~ s/.*: (\d+).*/$1/;
 (my $iurt_aut = '$Author$') =~ s/.*: (..).*/$1/;
 (my $iurt_dat = '$Date$') =~ s/.*: ([\d-]* [\d:]*) .*/$1/;
-plog("MSG", "This is iurt2 revision $iurt_rev-$iurt_aut ($iurt_dat)");
+plog("MSG", "This is iurt revision $iurt_rev-$iurt_aut ($iurt_dat)");
 
 my $todo = parseCommandLine($program_name, \@ARGV, \@params);
 @ARGV and usage($program_name, \@params, "@ARGV, too many arguments");

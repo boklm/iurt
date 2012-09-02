@@ -91,7 +91,7 @@ sub urpmi_command {
 	#  contrib/release -> contrib/release main/release
 	#  contrib/testing -> contrib/testing contrib/release main/testing main/release
 	#  non-free/release ...
-	# This is now done with an option in iurt2 --chrooted-urpmi -m media1 media2 -- media_url
+	# This is now done with an option in iurt --chrooted-urpmi -m media1 media2 -- media_url
 
 	if ($run->{chrooted_urpmi}{media}) {
 	    foreach my $m (@{$run->{chrooted_urpmi}{media}}) {
