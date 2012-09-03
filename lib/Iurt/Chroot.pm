@@ -89,10 +89,7 @@ sub clean_and_build_chroot {
 	return;
     }
     if (system("$sudo mount none -t tmpfs $chroot/dev/shm")) {
-	plog('ERROR', "Failed to mount /dev/shm");
-	sudo($config, "--umount", "$chroot/proc");
-	sudo($config, "--umount", "$chroot/dev/pts");
-	return;
+	plog('WARNING', "Failed to mount /dev/shm");
     }
     if ($run->{icecream}) {
 	system("$sudo mkdir -p $chroot/var/cache/icecream");
