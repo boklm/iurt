@@ -300,11 +300,23 @@ sub check_chroot_need_update {
 
 sub create_build_chroot {
     my ($chroot, $chroot_ref, $run, $config) = @_;
+    my $ret = 0;
     if ($run->{storage} eq 'btrfs') {
-        return create_build_chroot_btrfs($chroot, $chroot_ref, $run, $config);
+        $ret = create_build_chroot_btrfs($chroot, $chroot_ref, $run, $config);
     } else {
-        return create_build_chroot_tar($chroot, $chroot_ref, $run, $config);
+        $ret = create_build_chroot_tar($chroot, $chroot_ref, $run, $config);
     }
+
+    if ($ret) {
+        my $urpmi = $run->{urpmi};
+        if ($urpmi->{use__urpmi_root} && !$run->{chrooted_urpmi}) {
+	    if (!$urpmi->add_media__urpmi_root($chroot, $config->{base_media})) {
+	        plog('ERROR', "urpmi.addmedia --urpmi-root failed");
+	        return;
+	    }
+        }
+    }
+    return $ret;
 }
 
 sub create_build_chroot_tar {
