@@ -964,7 +964,7 @@ retry:
 			exit();
 		    }
 		    plog('DEBUG', "calling callback for $opt->{hash}");
-		    if ($output =~ m!/bin/ld: cannot find -l(\S*)|configure.*error.* (?:-l(\S+)|(\S+) includes)!) {
+		    if ($output =~ m!/bin/ld: cannot find -l(\S*)|configure.*[^W]error.* (?:-l(\S+)|(\S+) includes)!) {
 			my $missing = $1;
 			my @rpm = find_provides(\%pack_provide, $missing);
 			plog(5, "likely @rpm ($missing-devel) needed to rebuilt $srpm is not in build_requires");
