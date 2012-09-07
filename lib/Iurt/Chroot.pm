@@ -278,9 +278,12 @@ sub check_mounted {
 sub check_chroot_need_update {
     my ($tmp_chroot, $run) = @_;
 
+    my $tmp_urpmi = mktemp("$tmp_chroot/tmp.XXXXXX");
     my @installed_pkgs = grep { !/^gpg-pubkey/ } chomp_(cat_("$tmp_chroot/var/log/qa"));
-    my @available_pkgs = chomp_(`urpmq --use-distrib $run->{urpmi}{distrib_url} --list -f 2>/dev/null`);
+    my @available_pkgs = chomp_(`urpmq --urpmi-root $tmp_urpmi --use-distrib $run->{urpmi}{distrib_url} --list -f 2>/dev/null`);
     my @removed_pkgs = difference2(\@installed_pkgs, \@available_pkgs);
+
+    rm_rf($tmp_urpmi);
 
     if (@installed_pkgs) {
         if (@removed_pkgs) {
