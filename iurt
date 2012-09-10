@@ -954,7 +954,6 @@ retry:
 		debug_mail => $run{debug},
 		cc => $cc, 
 		log => $log_dir, 
-		error_regexp => 'rror.*ailed|Bad exit status|RPM build error',
 		callback => sub { 
 		    my ($opt, $output) = @_;
 		    if ($run{stop}) {

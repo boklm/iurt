@@ -1,6 +1,8 @@
 0.6.10 (unreleased)
 - fix false positive when looking for errors
 - fix always telling to rebuild
+- only rely on exit code to assess success or faillure of urpm
+  (greping for errors leaded to false positives)
 
 0.6.9
 - failing to mount /dev/pts is not a fatal error
