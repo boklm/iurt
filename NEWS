@@ -1,5 +1,6 @@
 0.6.10 (unreleased)
 - fix false positive when looking for errors
+- fix always telling to rebuild
 
 0.6.9
 - failing to mount /dev/pts is not a fatal error
