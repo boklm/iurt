@@ -1,4 +1,4 @@
-0.6.10 (unreleased)
+0.6.10
 - fix false positive when looking for errors
 - fix always telling to rebuild
 - only rely on exit code to assess success or faillure of urpm
