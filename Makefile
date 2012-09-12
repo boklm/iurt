@@ -1,7 +1,7 @@
 
 NAME=iurt
 PACKAGE=$(NAME)
-VERSION=0.6.11
+VERSION=$(shell egrep 'my \$$version = .*' iurt|sed -e "s/';//" -e "s/.*'//")
 
 VENDORLIB = $(shell eval "`perl -V:installvendorlib`"; echo $$installvendorlib)
 INSTALLVENDORLIB = $(DESTDIR)$(VENDORLIB)
