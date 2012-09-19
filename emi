@@ -192,12 +192,12 @@ foreach my $prefix (sort keys %pkg_tree) {
     my $ok = 1;
 
     foreach my $section (keys %{$pkg_tree{$prefix}{section}}) {
-	my $has_arched_packages = scalar(difference2([ keys %{$pkg_tree{$prefix}{section}{$section}{arch}} ], [ qw(src noarch) ]));
+	my @wanted_archs = defined($pkg_tree{$prefix}{section}{$section}{arch}{noarch}) ? ('noarch') : @{$config->{mandatory_arch}};
 	my $path = $pkg_tree{$prefix}{section}{$section}{path};
 	my %missing;
 
 	plog('DEBUG', "... in $path");
-	foreach my $m (if_($has_arched_packages, @{$config->{mandatory_arch}}), 'src') {
+	foreach my $m (@wanted_archs, 'src') {
 	    $excluded{$prefix}{$section}{$m} and next;
 	    my $x = "yes";
 	    if (!$pkg_tree{$prefix}{section}{$section}{arch}{$m}) {
