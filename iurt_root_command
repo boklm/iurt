@@ -143,6 +143,10 @@ $run{todo} = [];
     "bind mount source on dest", 
     \&bindmount, "Bind mounting" ],
 
+    [ "", "tmpfs", 1, "<directory>", 
+    "mount a tmpfs on the given directory", 
+    \&tmpfs, "Mount tmpfs" ],
+
     [ "", "umount", 1, "<directory>", 
     "umount the given directory", 
     \&umount, "Unmounting" ],
@@ -419,6 +423,12 @@ sub bindmount {
         system("mount", "-o", "remount,ro", $dest) == 0 or return;
     }
     return 1;
+}
+
+sub tmpfs {
+    my ($_run, $dir) = @_;
+    check_path_authorized($dir) or return;
+    return !system("mount", "none", "-t", "tmpfs", $dir);
 }
 
 sub umount {

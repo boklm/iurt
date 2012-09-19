@@ -88,7 +88,7 @@ sub clean_and_build_chroot {
 	sudo($config, "--umount", "$chroot/proc");
 	return;
     }
-    if (!sudo($config, '--bindmount', "/dev/shm", "$chroot/dev/shm")) {
+    if (!sudo($config, '--tmpfs', "$chroot/dev/shm")) {
 	plog('WARNING', "Failed to mount /dev/shm");
     }
     if ($run->{icecream}) {
