@@ -365,7 +365,7 @@ plog_init($program_name, $run{logfd} || $LOG, 7, 1); # For parsing command line
 
 # Display version information
 #
-my $version = '0.6.12';
+my $version = '0.6.13';
 plog("MSG", "This is iurt version $version");
 
 my $todo = parseCommandLine($program_name, \@ARGV, \@params);
