@@ -43,7 +43,7 @@ my $program_name = 'emi';
 $run{program_name} = $program_name;
 
 my $LOG;
-if (!$ENV{'EMI_LOG_FILE'} || !open($LOG, '>>', $ENV{'EMI_LOG_FILE'})) {
+if (!$ENV{EMI_LOG_FILE} || !open($LOG, '>>', $ENV{EMI_LOG_FILE})) {
     open($LOG, ">&STDERR");
 }
 
@@ -192,7 +192,7 @@ foreach my $prefix (sort keys %pkg_tree) {
     my $ok = 1;
 
     foreach my $section (keys %{$pkg_tree{$prefix}{section}}) {
-	my @wanted_archs = defined($pkg_tree{$prefix}{section}{$section}{arch}{noarch}) ? ('noarch') : @{$config->{mandatory_arch}};
+	my @wanted_archs = defined($pkg_tree{$prefix}{section}{$section}{arch}{noarch}) ? 'noarch' : @{$config->{mandatory_arch}};
 	my $path = $pkg_tree{$prefix}{section}{$section}{path};
 	my %missing;
 

@@ -50,7 +50,7 @@ my $program_name = 'ulri';
 $run{program_name} = $program_name;
 
 my $LOG;
-if (!$ENV{'ULRI_LOG_FILE'} || !open($LOG, '>>', $ENV{'ULRI_LOG_FILE'})) {
+if (!$ENV{ULRI_LOG_FILE} || !open($LOG, '>>', $ENV{ULRI_LOG_FILE})) {
     open($LOG, ">&STDERR");
 }
 
