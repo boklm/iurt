@@ -489,36 +489,7 @@ foreach my $prefix (keys %pkg_tree) {
 	    # Notify user if build failed
 	    #
 	    if ($user) {
-		my $text = join("\n", "Build of the following packages failed:\n", map { "- $_" } @{$ent->{srpms}}) . "\n";
-		my $srpms = join(' ', @{$ent->{srpms}}, undef);
-		
-		my $to = get_author_email($user) || "Unknown <$config->{admin}>";
-		my $cc;
-		my $fpath = "$config->{http_queue}/failure/$path/$prefix";
-		$fpath =~ tr!/!!s;	# Squash double slashes ...
-		$fpath =~ s!/!//!;	# ... except for http://
-
-		$text .= "\nFailure details available in $fpath/log\n";
-		$text .= "Reason:\n";
-		$text .= read_file("$fail_dir/$prefix/log/status.log");
-		$text .= "\nLog files generated:\n";
-		
-		opendir my $DP1, "$fail_dir/$prefix/log/";
-		foreach my $f1 (sort(readdir($DP1))) {
-		    next if ! -d "$fail_dir/$prefix/log/$f1" || $f1 =~ m/^\./;
-		    
-		    opendir my $DP2, "$fail_dir/$prefix/log/$f1";
-		    foreach my $f2 (readdir $DP2) {
-			next if $f2 =~ m/^\./;
-			$text .= "$fpath/log/$f1/$f2\n";
-		    }
-		    closedir $DP2;
-		}
-		closedir $DP1;
-		
-		sendmail($to, $cc,
-			 "Rebuild failed on $arch for $srpms", $text,
-			 "Ulri the scheduler bot <$config->{admin}>", 0, $config);
+		warn_about_failure($user, $ent, $arch, $fail_dir, $path, $prefix);
 	    }
 	    
 	    # clean the log on the compilation machine
@@ -744,6 +715,40 @@ exit();
 #
 # Subroutines
 #
+
+sub warn_about_failure {
+    my ($user, $ent, $arch, $fail_dir, $path, $prefix) = @_;
+    my $text = join("\n", "Build of the following packages failed:\n", map { "- $_" } @{$ent->{srpms}}) . "\n";
+    my $srpms = join(' ', @{$ent->{srpms}}, undef);
+		
+    my $to = get_author_email($user) || "Unknown <$config->{admin}>";
+    my $cc;
+    my $fpath = "$config->{http_queue}/failure/$path/$prefix";
+    $fpath =~ tr!/!!s;             # Squash double slashes ... 
+      $fpath =~ s!/!//!;           # ... except for http://
+
+    $text .= "\nFailure details available in $fpath/log\n";
+    $text .= "Reason:\n";
+    $text .= read_file("$fail_dir/$prefix/log/status.log");
+    $text .= "\nLog files generated:\n";
+		
+    opendir my $DP1, "$fail_dir/$prefix/log/";
+    foreach my $f1 (sort(readdir($DP1))) {
+        next if ! -d "$fail_dir/$prefix/log/$f1" || $f1 =~ m/^\./;
+		    
+        opendir my $DP2, "$fail_dir/$prefix/log/$f1";
+        foreach my $f2 (readdir $DP2) {
+            next if $f2 =~ m/^\./;
+            $text .= "$fpath/log/$f1/$f2\n";
+        }
+        closedir $DP2;
+    }
+    closedir $DP1;
+		
+    sendmail($to, $cc,
+             "Rebuild failed on $arch for $srpms", $text,
+             "Ulri the scheduler bot <$config->{admin}>", 0, $config);
+}
 
 sub get_pid_from_file {
     my ($file) = @_;
