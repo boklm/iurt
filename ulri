@@ -578,12 +578,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 	    # as noarch
 	    #
 	    my $noarch = 1;
-	    foreach my $srpm (@$srpms) {
-		if (!check_noarch("$todo_dir/${prefix}_$srpm")) {
-		    $noarch = 0;
-		    last;
-		}
-	    }
+	    $noarch = 0 if any { !check_noarch("$todo_dir/${prefix}_$_") } @$srpms;
 	    
 	    #plog("@$srpms is noarch") if $noarch;
 
