@@ -281,10 +281,9 @@ sub upload_prefix_in_section {
 	    my $text = join("\n", qq(The upload of the following packages failed:\n), map { "- $_" } @pkgs) . "\n";
 	    my $rpms = join(' ', @pkgs, undef);
 	    my $to =  get_author_email($user) || "Unknown <$config->{admin}>";
-	    my $cc;
 	    $text .= "\nUpload log available in $config->{http_queue}/rejected/$path/$prefix.youri\n";
 	    
-	    sendmail($to, $cc, "Upload failed for $rpms", $text, "Emi the upload bot <$config->{admin}>", 0, $config);
+	    sendmail($to, undef, "Upload failed for $rpms", $text, "Emi the upload bot <$config->{admin}>", 0, $config);
 	}
 	
 	# should delete the files
