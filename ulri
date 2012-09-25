@@ -644,7 +644,7 @@ foreach my $prefix (sort keys %pkg_tree) {
 		    #
 		    # create also the log dir for botcmd.log
 		    next if ssh($remote, "mkdir -p $prefix_dir/log");
-		    my $pkgs = "";
+		    my $pkgs;
 		    my $ok = 1;
 		    foreach my $srpm (@$srpms) {
 			plog('NOTIFY', "Send to $host/$arch: $srpm");
