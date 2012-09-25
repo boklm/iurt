@@ -32,7 +32,7 @@
 #
 
 use strict;
-use MDK::Common qw(cat_ if_);
+use MDK::Common qw(any cat_ if_);
 use Iurt::Config qw(config_usage get_date config_init get_author_email check_arch check_noarch);
 use Iurt::Process qw(check_pid);
 use Iurt::File qw(check_upload_tree);
@@ -566,7 +566,6 @@ foreach my $prefix (sort keys %pkg_tree) {
 	
 	# need to find a bot for each arch
 	foreach my $arch (keys %{$config->{bot}}) {
-	    my $exclude;
 	    
 	    # Skip this arch if package is building as noarch
 	    #
@@ -587,16 +586,10 @@ foreach my $prefix (sort keys %pkg_tree) {
 	    }
 	    
 	    #plog("@$srpms is noarch") if $noarch;
-	    
-	    foreach my $srpm (@$srpms) {
-		if (!check_arch("$todo_dir/${prefix}_$srpm", $arch)) {
-		    plog('WARN', "excluding from $arch: $srpm");
-		    $exclude = 1;
-		    last;
-		}
-	    }
-	    
-	    if ($exclude) {
+
+	    my $excluded = any { !check_arch("$todo_dir/${prefix}_$_", $arch) } @$srpms;
+	    if ($excluded) {
+		plog('WARN', "excluding from $arch: $excluded");
 		create_file("$done_dir/${prefix}_$arch.excluded",
 			    "ulri $arch excluded");
 		next;
