@@ -277,13 +277,9 @@ sub upload_prefix_in_section {
 	
 	my ($user) = $prefix =~ /\d{14}\.(\w+)\.\w+\.\d+/;
 	if ($user) {
-	    my $text = qq(The upload of the following packages failed:\n);
-	    my $rpms;
-	    foreach my $rpm (@{$pkg_tree{$prefix}{section}{$section}{rpms}}) {
-		    $rpm =~ /src\.rpm$/ or next;
-		    $rpms .= "$rpm ";
-		    $text .= "- $rpm\n";
-	    }
+	    my @pkgs = grep { !/src\.rpm$/ } @{$pkg_tree{$prefix}{section}{$section}{rpms}};
+	    my $text = join("\n", qq(The upload of the following packages failed:\n), map { "- $_" } @pkgs) . "\n";
+	    my $rpms = join(' ', @pkgs, undef);
 	    my $to =  get_author_email($user) || "Unknown <$config->{admin}>";
 	    my $cc;
 	    $text .= "\nUpload log available in $config->{http_queue}/rejected/$path/$prefix.youri\n";

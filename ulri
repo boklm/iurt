@@ -427,9 +427,7 @@ foreach my $prefix (keys %pkg_tree) {
 	    
 	    $run{bot}{$host}{$bot} = 0;
 	    
-	    if ($later) {
-		next bot;
-	    }
+	    next bot if $later;
 	    
 	    if (!$ended && !$fail) {
 		plog('FAIL', "$bot timed out on $host/$arch ($seconds sec) or " .
@@ -438,9 +436,7 @@ foreach my $prefix (keys %pkg_tree) {
 		next bot;
 	    }
 	    
-	    if ($success && !$fail) {
-		next bot;
-	    }
+	    next bot if $success && !$fail;
 	    
 	    if (!$status) {
 	    plog('ERROR', "build bot died on $host, reschedule compilation");
@@ -493,12 +489,8 @@ foreach my $prefix (keys %pkg_tree) {
 	    # Notify user if build failed
 	    #
 	    if ($user) {
-		my $text = "Build of the following packages failed:\n\n";
-		my $srpms = "";
-		foreach my $srpm (@{$ent->{srpms}}) {
-		    $srpms .= "$srpm ";
-		    $text .= "- $srpm\n";
-		}
+		my $text = join("\n", "Build of the following packages failed:\n", map { "- $_" } @{$ent->{srpms}}) . "\n";
+		my $srpms = join(' ', @{$ent->{srpms}}, undef);
 		
 		my $to = get_author_email($user) || "Unknown <$config->{admin}>";
 		my $cc;
@@ -513,15 +505,11 @@ foreach my $prefix (keys %pkg_tree) {
 		
 		opendir my $DP1, "$fail_dir/$prefix/log/";
 		foreach my $f1 (sort(readdir($DP1))) {
-		    if (! -d "$fail_dir/$prefix/log/$f1" || $f1 =~ m/^\./) {
-			next;
-		    }
+		    next if ! -d "$fail_dir/$prefix/log/$f1" || $f1 =~ m/^\./;
 		    
 		    opendir my $DP2, "$fail_dir/$prefix/log/$f1";
 		    foreach my $f2 (readdir $DP2) {
-			if ($f2 =~ m/^\./) {
-			    next;
-			}
+			next if $f2 =~ m/^\./;
 			$text .= "$fpath/log/$f1/$f2\n";
 		    }
 		    closedir $DP2;
@@ -675,11 +663,8 @@ foreach my $prefix (sort keys %pkg_tree) {
 		    $cmd =~ s!__SECTION__!$section!g;
 		    
 		    my $media_to_add;
-		    if (ref $config->{media}{$target}{$media}) {
-			$media_to_add = join ' ', @{$config->{media}{$target}{$media}};
-		    } elsif (ref $config->{media}{default}{$media}) { 
-			$media_to_add = join ' ', @{$config->{media}{default}{$media}};
-		    }
+		    my $medium = ref $config->{media}{$target}{$media} ? $target : 'default';
+		    $media_to_add = join ' ', @{$config->{media}{$medium}{$media}};
 		    plog('DEBUG', "Will compile only with media $media_to_add");
 		    $cmd =~ s!__MEDIA__!$media_to_add!g;
 		    
