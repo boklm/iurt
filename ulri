@@ -758,7 +758,7 @@ exit();
 #
 
 sub get_pid_from_file {
-    my $file = shift;
+    my ($file) = @_;
 
     my $pid;
     open my $FILE, $file || die "FATAL: can't open $file";
@@ -786,8 +786,7 @@ sub read_line {
 }
 
 sub check_file_timeout {
-    my $file = shift;
-    my $time = shift;
+    my ($file, $time) = @_;
 
     my $i = 0;
     while ($i < $time && (!-f $file || -z $file)) { sleep 1; $i++ }
