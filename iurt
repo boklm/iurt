@@ -1045,7 +1045,7 @@ retry:
 	    }
 	    process_queue($config, \%run, \@wrong_rpm, 1);
 	}
-	# dymp_cache each time so that concurrent process can get updated
+	# dump_cache each time so that concurrent process can get updated
 	dump_cache_par(\%run) if $run{concurrent_run};
     }
     if ($run{group}) {
