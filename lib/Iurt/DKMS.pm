@@ -275,7 +275,7 @@ sub dkms_compile {
 
 	-d "$dkms_spool/$media" or mkdir_p "$dkms_spool/$media";
 
-	my @dkms_rpm_dirs = ("/home/$luser/rpm/RPMS/*", "/usr/src/rpm/RPMS/*", "/var/lib/dkms/$realname/$realversion/rpm");
+	my @dkms_rpm_dirs = ("/home/$luser/rpmbuild/RPMS/*", "/usr/src/rpm/RPMS/*", "/var/lib/dkms/$realname/$realversion/rpm");
 	my $copied;
 	foreach (@dkms_rpm_dirs) {
 	    my $rpms = "$chroot_tmp$_/*.rpm";

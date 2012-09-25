@@ -151,8 +151,8 @@ sub dump_rpmmacros {
     }
     my $packager = $run->{packager} || $config->{packager};
 
-    print $f qq(\%_topdir                \%(echo \$HOME)/rpm
-\%_tmppath               \%(echo \$HOME)/rpm/tmp/
+    print $f qq(\%_topdir                \%(echo \$HOME)/rpmbuild
+\%_tmppath               \%(echo \$HOME)/rpmbuild/tmp/
 \%distribution           $config->{distribution}
 \%vendor                 $config->{vendor}
 \%packager               $packager
@@ -451,7 +451,7 @@ sub build_chroot {
     sudo($config, "--cp", "$tmp_chroot/tmp/qa", "$tmp_chroot/var/log/qa");
     unlink("$tmp_chroot/tmp/qa");
 
-    sudo($config, "--mkdir", "$tmp_chroot/etc/skel/rpm/$_")
+    sudo($config, "--mkdir", "$tmp_chroot/etc/skel/rpmbuild/$_")
       foreach "", qw(RPMS BUILD SPECS SRPMS SOURCES tmp);
 
     #

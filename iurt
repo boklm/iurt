@@ -219,7 +219,7 @@ $run{todo} = [];
     "Use this username to build package",
     sub { ($run{user}) = @_ }, 'Setting build username' ],
     [ "r", "rebuild", -2, "<distro> <architecture> <srpm 1> <srpm 2> ... <srpm n>", 
-    "Rebuild the packages, e.g. $program_name -r cooker x86_64 /home/foo/rpm/SRPMS/foo-2.3-12mdv2007.0.src.rpm", 
+    "Rebuild the packages, e.g. $program_name -r cooker x86_64 /home/foo/rpmbuild/SRPMS/foo-2.3-12mdv2007.0.src.rpm", 
     sub { 
 	$run{rebuild} = 1; 
 	$run{distro} = shift @_;
@@ -902,7 +902,7 @@ retry:
 	-d $log_dir or die "FATAL: could not create $log_dir (check permissions and group ownerships)";
 	
 	plog('INFO', "Install build dependencies");
-	my $path_srpm = "$chroot_tmp/home/$luser/rpm/SRPMS/";
+	my $path_srpm = "$chroot_tmp/home/$luser/rpmbuild/SRPMS/";
 	
 	# on x86_64 the rpm database is getting corrupted and sometimes
 	# rpm do not found anymore installed packages, retrying several
@@ -927,11 +927,11 @@ retry:
 	    debug_mail => $run{debug},
 	    log => $log_dir); # or next; As this failed quite often, do not stop
 	plog('NOTIFY', "Building $srpm");
-	my $command = "rpmbuild --rebuild $run{with_flags} /home/$luser/rpm/SRPMS/$srpm";
+	my $command = "rpmbuild --rebuild $run{with_flags} /home/$luser/rpmbuild/SRPMS/$srpm";
 	if ($run{stop}) {
 	    $urpmi->install_packages('chroot', $chroot_tmp, $local_spool, \%pack_provide, 'configure', "[ADMIN] installation of urpmi and sudo failed in the chroot $run{my_arch}", { check => 1, maintainer => $config->{admin} }, 'urpmi', 'sudo');
 	    add_sudoers($chroot_tmp, $luser);
-	    $command = "rpmbuild -b$run{stop} /home/$luser/rpm/SPECS/$spec";
+	    $command = "rpmbuild -b$run{stop} /home/$luser/rpmbuild/SPECS/$spec";
 	}
 
 	my ($srpm_name) = $srpm =~ /(?:.*:)?(.*)-[^-]+-[^-]+\.src\.rpm$/;
@@ -998,12 +998,12 @@ retry:
 	delete $cache->{needed}{$srpm} if defined $cache->{needed}{$srpm};
 	delete $cache->{buildrequires}{$srpm} if defined $cache->{buildrequires}{$srpm};
 	# FIXME It seems the glob is not correctly expanded any more, so listing the directory content to do so
-	opendir my $binfh, "$chroot_tmp/home/$luser/rpm/RPMS/";
+	opendir my $binfh, "$chroot_tmp/home/$luser/rpmbuild/RPMS/";
 	my @packages;
 	foreach my $bindir (readdir $binfh) {
-	    -d "$chroot_tmp/home/$luser/rpm/RPMS/$bindir" or next;
-	    opendir my $rpmfh, "$chroot_tmp/home/$luser/rpm/RPMS/$bindir";
-	    push @packages, map { "$chroot_tmp/home/$luser/rpm/RPMS/$bindir/$_" } grep { !/src\.rpm$/ && /\.rpm$/ } readdir $rpmfh;
+	    -d "$chroot_tmp/home/$luser/rpmbuild/RPMS/$bindir" or next;
+	    opendir my $rpmfh, "$chroot_tmp/home/$luser/rpmbuild/RPMS/$bindir";
+	    push @packages, map { "$chroot_tmp/home/$luser/rpmbuild/RPMS/$bindir/$_" } grep { !/src\.rpm$/ && /\.rpm$/ } readdir $rpmfh;
 	}
 
 	# 20060810 warly We should fail here, but rpm is currently
@@ -1034,14 +1034,14 @@ retry:
 	    } else {
 		plog('OK', "build successful, copying packages to $local_spool.");
 
-		system("cp $chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpm/RPMS/ to $local_spool ($!)");
+		system("cp $chroot_tmp/home/$luser/rpmbuild/RPMS/*/*.rpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpmbuild/RPMS/ to $local_spool ($!)");
 	    }
 
 	    if ($run{copy_srpm}) {
 		# replace the old srpm
 		unlink "$local_spool/$old_srpm";
 
-		system("cp $chroot_tmp/home/$luser/rpm/SRPMS/$srpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy $srpm from $chroot_tmp/home/$luser/rpm/SRPMS/ to $local_spool ($!)");
+		system("cp $chroot_tmp/home/$luser/rpmbuild/SRPMS/$srpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy $srpm from $chroot_tmp/home/$luser/rpmbuild/SRPMS/ to $local_spool ($!)");
 	    }
 	    process_queue($config, \%run, \@wrong_rpm, 1);
 	}
@@ -1061,9 +1061,9 @@ retry:
 	    $rebuild = 0;
 	    if ($done == @{$run{todo}}) {
 		plog('OK', "all packages succesfully compiled, copying packages to $local_spool.");
-		system("cp $chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpm/RPMS/ to $local_spool ($!)");
+		system("cp $chroot_tmp/home/$luser/rpmbuild/RPMS/*/*.rpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpmbuild/RPMS/ to $local_spool ($!)");
 		if ($run{copy_srpm}) {
-		    system("cp $chroot_tmp/home/$luser/rpm/SRPMS/*.src.rpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy SRPMS from $chroot_tmp/home/$luser/rpm/SRPMS/ to $local_spool ($!)");
+		    system("cp $chroot_tmp/home/$luser/rpmbuild/SRPMS/*.src.rpm $local_spool &>/dev/null") and plog('ERROR', "ERROR: could not copy SRPMS from $chroot_tmp/home/$luser/rpmbuild/SRPMS/ to $local_spool ($!)");
 		}
 	    } else {
 		plog('FAIL', "some packages could not be compiled.");

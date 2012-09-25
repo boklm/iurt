@@ -64,8 +64,8 @@ sub add_to_local_media {
     my ($self, $chroot_tmp, $srpm, $luser) = @_;
     my $local_media = $self->{local_media};
 
-    system("cp $chroot_tmp/home/$luser/rpm/RPMS/*/*.rpm $local_media &>/dev/null") and plog("ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpm/RPMS/ to $local_media ($!)");
-    system("cp $chroot_tmp/home/$luser/rpm/SRPMS/$srpm $local_media &>/dev/null") and plog("ERROR: could not copy $srpm from $chroot_tmp/home/$luser/rpm/SRPMS/ to $local_media ($!)");
+    system("cp $chroot_tmp/home/$luser/rpmbuild/RPMS/*/*.rpm $local_media &>/dev/null") and plog("ERROR: could not copy rpm files from $chroot_tmp/home/$luser/rpmbuild/RPMS/ to $local_media ($!)");
+    system("cp $chroot_tmp/home/$luser/rpmbuild/SRPMS/$srpm $local_media &>/dev/null") and plog("ERROR: could not copy $srpm from $chroot_tmp/home/$luser/rpmbuild/SRPMS/ to $local_media ($!)");
 }
 
 sub urpmi_command {
@@ -610,7 +610,7 @@ sub recreate_srpm {
     perform_command([ 
 	sub { 
 	    my ($s, $d) = @_; 
-	    sudo($config, '--cp', $s, $d) } , [ "$dir/$srpm", "$chroot_tmp/home/$luser/rpm/SRPMS/" ] ], 
+	    sudo($config, '--cp', $s, $d) } , [ "$dir/$srpm", "$chroot_tmp/home/$luser/rpmbuild/SRPMS/" ] ], 
 	$run, $config, $cache, 
 	type => 'perl',
 	mail => $config->{admin}, 
@@ -638,7 +638,7 @@ sub recreate_srpm {
 	    1;
 	});
     plog('DEBUG', "recreating src.rpm...");
-    if (!perform_command(qq(chroot $chroot_tmp su $luser -c "rpm -i /home/$luser/rpm/SRPMS/$srpm"), 
+    if (!perform_command(qq(chroot $chroot_tmp su $luser -c "rpm -i /home/$luser/rpmbuild/SRPMS/$srpm"), 
 	    $run, $config, $cache, %opt)) {
 	plog("ERROR: chrooting failed (retry $opt{retry}") if $run->{debug};
 	if ($opt{retry}) {
@@ -648,7 +648,7 @@ sub recreate_srpm {
     }
     
     my $spec;
-    my $oldsrpm = "$chroot_tmp/home/$luser/rpm/SRPMS/$srpm";
+    my $oldsrpm = "$chroot_tmp/home/$luser/rpmbuild/SRPMS/$srpm";
     my $filelist = `rpm -qlp $oldsrpm`;
     my ($name) = $srpm =~ /(?:.*:)?(.*)-[^-]+-[^-]+\.src\.rpm$/;
     foreach my $file (split "\n", $filelist) {
@@ -662,7 +662,7 @@ sub recreate_srpm {
     } 
     # 20060515 This should not be necessairy any more if urpmi *.spec works, but it doesn't
     #
-    my $ret = perform_command(qq(chroot $chroot_tmp su $luser -c "rpmbuild --nodeps -bs $with_flags /home/$luser/rpm/SPECS/$spec"), 
+    my $ret = perform_command(qq(chroot $chroot_tmp su $luser -c "rpmbuild --nodeps -bs $with_flags /home/$luser/rpmbuild/SPECS/$spec"), 
 	$run, $config, $cache, 
 	use_iurt_root_command => 1,
 	mail => $config->{admin}, 
@@ -679,12 +679,12 @@ sub recreate_srpm {
     # we can not rely on build time (one of the src.rpm may have been built on a machine with wrong time)
     # let's say that if we have several one, we want the non original one
     my $file = $oldsrpm;
-    foreach my $f (glob "$chroot_tmp/home/$luser/rpm/SRPMS/$name-*.src.rpm") {
+    foreach my $f (glob "$chroot_tmp/home/$luser/rpmbuild/SRPMS/$name-*.src.rpm") {
 	$file = $f if $f ne $oldsrpm;
     }
     my ($new_srpm) = basename($file);
     my $prefix = get_package_prefix($srpm);
-    my $newfile = "$chroot_tmp/home/$luser/rpm/SRPMS/$prefix$new_srpm";
+    my $newfile = "$chroot_tmp/home/$luser/rpmbuild/SRPMS/$prefix$new_srpm";
     if (-f $file && $newfile ne $file) {
 	if (-f $newfile) {
 	    sudo($config, '--rm', $newfile) or die "$program_name: could not delete $newfile ($!)";
