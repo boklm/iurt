@@ -1,6 +1,7 @@
-0.6.13 (unreleased)
+0.6.13
 - use rpmbuild/ rather than rpm/
   (need invalidating chroots)
+- various code cleanups and simplification
 
 0.6.12
 - mount /dev/shm as tmpfs using the helper, safer
