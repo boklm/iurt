@@ -270,9 +270,9 @@ sub upload_prefix_in_section {
 	plog('ERROR', "upload failed ($!), rejecting files in $reject/$path/");
 	make_path("$reject/$path");
 	foreach my $rpm (@{$pkg_tree{$prefix}{section}{$section}{rpms}}) {
-	    link "$done/$path/${prefix}_$rpm", "$reject/$path/${prefix}_$rpm" or plog('ERROR', "ERROR: link of $rpm failed ($!)");
+	    link("$done/$path/${prefix}_$rpm", "$reject/$path/${prefix}_$rpm") or plog('ERROR', "ERROR: link of $rpm failed ($!)");
 	}
-	link "$done/$path/$prefix.youri", "$reject/$path/$prefix.youri";
+	link("$done/$path/$prefix.youri", "$reject/$path/$prefix.youri");
 	
 	my ($user) = $prefix =~ /\d{14}\.(\w+)\.\w+\.\d+/;
 	if ($user) {
@@ -289,16 +289,16 @@ sub upload_prefix_in_section {
     }
 
     # delete the files which should have heen either put in queue or rejected
-    unlink $_ foreach @packages;
+    unlink($_) foreach @packages;
     
     # keep the log file for debugging
-    # unlink "$done/$path/$prefix.youri";
+    # unlink("$done/$path/$prefix.youri");
     
     # unlink the sources rpm, other arch will be able to grab it into
     # the repository
     foreach (@{$pkg_tree{$prefix}{todo}}) {
 	plog('DEBUG', "unlink $todo/$path/${prefix}_$_");
-	unlink "$todo/$path/${prefix}_$_";
+	unlink("$todo/$path/${prefix}_$_");
     }
 }
 
@@ -326,6 +326,6 @@ foreach my $target (keys %targets) {
     }
 }
 
-unlink $pidfile;
+unlink($pidfile);
 exit();
 
