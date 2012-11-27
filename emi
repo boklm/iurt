@@ -289,7 +289,7 @@ sub upload_prefix_in_section {
     }
 
     # delete the files which should have heen either put in queue or rejected
-    unlink($_) foreach @packages;
+    unlink(@packages);
     
     # keep the log file for debugging
     # unlink("$done/$path/$prefix.youri");
