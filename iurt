@@ -445,6 +445,12 @@ my %config_usage = (
 	    default => 18000,
 	},
     },
+    build_stalled_timeout => {
+	desc => 'Maximum build time after which the build process is terminated if it seems stalled',
+	default => {
+	    default => 300,
+	},
+    },
     cache_home => {
 	desc => 'Where to store the cache files',
 	default => "$HOME/.bugs"
@@ -948,6 +954,7 @@ retry:
 		logname => "build", 
 		hash => "build_$srpm", 
 		timeout => $config->{build_timeout}{$srpm_name} || $config->{build_timeout}{default},
+		stalled_timeout => $config->{build_stalled_timeout}{$srpm_name} || $config->{build_stalled_timeout}{default},
 		srpm => $srpm,
 		debug_mail => $run{debug},
 		cc => $cc, 

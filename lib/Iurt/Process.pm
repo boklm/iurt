@@ -8,6 +8,7 @@ use Iurt::Mail qw(sendmail);
 use Iurt::Config qw(dump_cache_par);
 use Iurt::Util qw(plog);
 use POSIX ":sys_wait_h";
+use Sys::Load qw(getload);
 
 our @EXPORT = qw(
     kill_for_good
@@ -102,14 +103,23 @@ sub fork_to_monitor {
 	    my (@stat) = stat $logfile;
 	    if ($stat[7] > $size_limit) {
 		# FIXME: we left runaway processes (eg: urpmi)
-		plog('NONE', "ERROR: killing current command because of log size exceeding limit ($stat[7] > $config->{log_size_limit})");
+		plog('ERROR', "Killing current command because of log size exceeding limit ($stat[7] > $config->{log_size_limit})");
 		kill 14, "-$parent_pid";
 		exit();
 	    }
+	    if ($stat[9] + $opt{stalled_timeout} < time()){
+		# If nothing was written to the logfile for more than stalled_timeout, check if the system seems busy
+		if ((getload())[1] < 0.5) {
+		    plog('ERROR', "Killing current command because it seems blocked");
+		    kill 14, "-$parent_pid";
+		    exit();
+		}
+	    }
+
 	    my $df = df $opt{log};
 	    if ($df->{per} >= 99) {
 		# FIXME: we left runaway processes (eg: urpmi)
-		plog('NONE', "ERROR: killing current command because running out of disk space at $opt{log} (only $df->{bavail}KB left)");
+		plog('ERROR', "Killing current command because running out of disk space at $opt{log} (only $df->{bavail}KB left)");
 		kill 14, "-$parent_pid";
 		exit();
 	    }
