@@ -1052,6 +1052,7 @@ retry:
 	    }
 	    process_queue($config, \%run, \@wrong_rpm, 1);
 	}
+	dump_status($local_spool, \%run);
 	# dump_cache each time so that concurrent process can get updated
 	dump_cache_par(\%run) if $run{concurrent_run};
     }

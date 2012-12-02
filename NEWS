@@ -1,5 +1,6 @@
 - kill build if nothing is printed for 5 minutes and
   system is idle
+- write status file even if the build is successful
 
 0.6.13
 - use rpmbuild/ rather than rpm/
