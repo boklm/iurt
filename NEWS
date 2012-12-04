@@ -1,6 +1,9 @@
 - kill build if nothing is printed for 5 minutes and
   system is idle
 - write status file even if the build is successful
+- allow setting some env variables to define and default to
+  setting PERL_EXTUTILS_AUTOINSTALL and PERL_AUTOINSTALL to
+  --skipdeps
 
 0.6.13
 - use rpmbuild/ rather than rpm/

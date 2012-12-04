@@ -479,6 +479,10 @@ my %config_usage = (
 	desc => 'Domain to append to usernames when sending emails',
 	default => 'mageia.org'
     },
+    env => {
+	desc => 'Environment variables to export',
+	default => { PERL_EXTUTILS_AUTOINSTALL => "--skipdeps", PERL_AUTOINSTALL => "--skipdeps" }
+    },
     home => {
 	desc => 'Home dir',
 	default => $HOME
@@ -564,6 +568,14 @@ if (!$arch_comp{$real_arch}{$run{my_arch}}) {
     die "FATAL $program_name: could not compile $run{my_arch} binaries on a $real_arch";
 }
 config_init(\%config_usage, $config, \%run);
+
+if ($config->{env}) {
+    foreach my $var (keys %{$config->{env}}) {
+	print "$var\n";
+	print $config->{env}->{$var}."\n";
+	$ENV{$var} = $config->{env}->{$var};
+    }
+}
 
 $config->{upload} .= $run{distro};
 $config->{upload} =~ s/community//g;
