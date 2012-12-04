@@ -572,8 +572,8 @@ config_init(\%config_usage, $config, \%run);
 if ($config->{env}) {
     foreach my $var (keys %{$config->{env}}) {
 	print "$var\n";
-	print $config->{env}->{$var}."\n";
-	$ENV{$var} = $config->{env}->{$var};
+	print $config->{env}{$var} . "\n";
+	$ENV{$var} = $config->{env}{$var};
     }
 }
 

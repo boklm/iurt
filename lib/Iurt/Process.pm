@@ -107,7 +107,7 @@ sub fork_to_monitor {
 		kill 14, "-$parent_pid";
 		exit();
 	    }
-	    if ($stat[9] + $opt{stalled_timeout} < time()){
+	    if ($stat[9] + $opt{stalled_timeout} < time()) {
 		# If nothing was written to the logfile for more than stalled_timeout, check if the system seems busy
 		if ((getload())[1] < 0.5) {
 		    plog('ERROR', "Killing current command because it seems blocked");
