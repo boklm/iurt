@@ -1192,9 +1192,6 @@ sub process_queue {
 		next;
 	    }
 	}
-	if ($run->{upload_source}) {
-
-	}
 	unlink "$dir/$rpm";
 	$cache->{queue}{$srpm} = 1;
     }

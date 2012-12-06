@@ -330,9 +330,6 @@ sub process_dkms_queue {
 		next;
 	    }
 	}
-	if ($run->{upload_source}) {
-	    #should not be necessary
-	}
 	# should not be necessary to use sudo
 	sudo($config, '--rm', "$dir/$rpm");
 	$cache->{queue}{$srpm} = 1;
