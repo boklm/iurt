@@ -192,7 +192,15 @@ foreach my $prefix (sort keys %pkg_tree) {
     my $ok = 1;
 
     foreach my $section (keys %{$pkg_tree{$prefix}{section}}) {
-	my @wanted_archs = defined($pkg_tree{$prefix}{section}{$section}{arch}{noarch}) ? 'noarch' : @{$config->{mandatory_arch}};
+	my $mandatory_arch = [];
+	if (ref $config->{mandatory_arch} eq 'ARRAY') {
+	    $mandatory_arch = $config->{mandatory_arch};
+	} elsif (ref $config->{mandatory_arch}->{$target} eq 'ARRAY') {
+	    $mandatory_arch = $config->{mandatory_arch}->{$target};
+	} elsif (ref $config->{mandatory_arch}->{default} eq 'ARRAY') {
+	    $mandatory_arch = $config->{mandatory_arch}->{default};
+	}
+	my @wanted_archs = defined($pkg_tree{$prefix}{section}{$section}{arch}{noarch}) ? 'noarch' : @{$mandatory_arch};
 	my $path = $pkg_tree{$prefix}{section}{$section}{path};
 	my %missing;
 
