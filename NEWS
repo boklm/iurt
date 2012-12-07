@@ -5,6 +5,7 @@
   setting PERL_EXTUTILS_AUTOINSTALL and PERL_AUTOINSTALL to
   --skipdeps
 - emi: allow setting per distro mandatory_arch
+- ulri: allow setting per distro arch
 
 0.6.13
 - use rpmbuild/ rather than rpm/

@@ -152,6 +152,13 @@ my %config_usage = (
         desc => 'Default packager tag user by bot',
 	default => 'Mageia Team <http://www.mageia.org>'
     },
+    arch => {
+	desc => 'Architectures list for each target',
+	default => {
+	    cauldron => [ 'i586', 'x86_64' ],
+	    default => [ 'i586', 'x86_64' ],
+	},
+    },
 );
 config_usage(\%config_usage, $config) if $run{config_usage};
 config_init(\%config_usage, $config, \%run);
@@ -535,8 +542,16 @@ foreach my $prefix (sort keys %pkg_tree) {
 	# count noarch todos only once even if searching multiple bots
 	my $noarch_countflag = 0;
 	
+	my @arch_list = keys %{$config->{bot}};
+	if (ref $config->{arch} eq 'ARRAY') {
+	    @arch_list = @{$config->{arch}};
+	} elsif (ref $config->{arch}->{$target} eq 'ARRAY') {
+	    @arch_list = @{$config->{arch}->{$target}};
+	} elsif (ref $config->{arch}->{default} eq 'ARRAY') {
+	    @arch_list = @{$config->{arch}->{default}};
+	}
 	# need to find a bot for each arch
-	foreach my $arch (keys %{$config->{bot}}) {
+	foreach my $arch (@arch_list) {
 	    
 	    # Skip this arch if package is building as noarch
 	    #
